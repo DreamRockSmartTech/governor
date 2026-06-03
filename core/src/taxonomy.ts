@@ -90,6 +90,21 @@ export function resolvePrefix(prefix: string, taxonomy: Taxonomy): string {
 }
 
 /**
+ * Frontmatter keys that carry *structural* meaning — graph edges plus
+ * `criteria_check`. Mutating these is the blocking case (control 4) and must go
+ * through the dedicated `edge`/`gate` paths, never a plain field `set`. This is
+ * the single source of truth for the structural/plain field split.
+ */
+export function isStructuralField(field: string, taxonomy: Taxonomy): boolean {
+  return field === "criteria_check" || field in taxonomy.edges;
+}
+
+/** The reserved `status` field is owned by the status/gate-runner paths. */
+export function isStatusField(field: string): boolean {
+  return field === "status";
+}
+
+/**
  * Merge a partial repo override onto a base taxonomy, extending node types,
  * per-type status enums, edges, and aliases. This is the portability seam
  * (control 3); it only ever extends — narrowing/removal semantics are TBD.
