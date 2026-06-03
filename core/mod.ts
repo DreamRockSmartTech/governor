@@ -7,21 +7,43 @@
  * package is the reusable engine; every frontend (the `@dreamrock/governor-cli`,
  * a future VSCode extension, or any fork) consumes it.
  *
- * Public surface (this release): load a `.governance/` tree, build the in-memory
- * graph, validate it, and render the INDEX view. The mutation/creation path
- * (`new`/`set`/`edge`), the gate-proof runner, and freeze enforcement land in
- * later versions.
+ * Public surface: load a `.governance/` tree, build the in-memory graph,
+ * validate it, render the INDEX view (read side); and the write side — create
+ * and mutate nodes, run gates, and query/enforce freeze. The serializer and
+ * counter file back the write path.
  *
  * @module
  */
 
 export { splitFrontmatter } from "./src/frontmatter.ts";
 export type { ParsedDocument } from "./src/frontmatter.ts";
+export { serializeNode } from "./src/serialize.ts";
 export { loadGovernance } from "./src/loader.ts";
 export { blastRadius, buildGraph } from "./src/graph.ts";
 export { validate } from "./src/validate.ts";
 export { renderIndex } from "./src/index-view.ts";
-export { DEFAULT_TAXONOMY, mergeTaxonomy, resolvePrefix } from "./src/taxonomy.ts";
+export { freezeState, guardMutation, isFrozen } from "./src/freeze.ts";
+export type { FreezeState } from "./src/freeze.ts";
+export { allocate, loadCounters, writeCounters } from "./src/counters.ts";
+export type { Counters } from "./src/counters.ts";
+export {
+  addEdge,
+  createNode,
+  MutationError,
+  removeEdge,
+  setField,
+  transitionStatus,
+} from "./src/mutate.ts";
+export type { CreateResult, NewNodeSpec } from "./src/mutate.ts";
+export { runGate } from "./src/gate-runner.ts";
+export type { GateResult } from "./src/gate-runner.ts";
+export {
+  DEFAULT_TAXONOMY,
+  isStatusField,
+  isStructuralField,
+  mergeTaxonomy,
+  resolvePrefix,
+} from "./src/taxonomy.ts";
 export type { EdgeKind, Taxonomy } from "./src/taxonomy.ts";
 export type { Edge, GovNode, Graph, Severity, ValidationFinding } from "./src/types.ts";
 
