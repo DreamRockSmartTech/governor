@@ -7,8 +7,21 @@ decisions, and work items — stored as plain files in the repo and enforced wit
 and signature-backed authority checks. The graph degrades to plain `ls`/`cat`; no renderer or
 service is required.
 
-> **Status:** early scaffold (`0.0.1`). The published versions today are namespace-reservation
-> stubs; the real API lands in later releases.
+> **Status:** early development (`0.0.1`). The first working slice of the engine has landed: a repo
+> can be loaded, validated, and have its INDEX regenerated. The mutation/creation path
+> (`new`/`set`/`edge`), the gate-proof runner, and freeze enforcement are still to come.
+
+## Commands (current)
+
+```sh
+governor check [--root <path>] [--json]   # validate a .governance/ tree (exit 1 on any error)
+governor index [--root <path>] [--write]  # regenerate the INDEX view (stdout, or --write the file)
+governor version
+```
+
+`check` runs the schema/grammar validator (id grammar, node type, status enum, uid, monotonic `{NN}`
+uniqueness) and graph-integrity checks (structural-edge symmetry, dangling edges) over the whole
+tree. `index` renders the INDEX projection from the graph — it is generated, never hand-maintained.
 
 ## Packages
 
@@ -35,7 +48,11 @@ pre-implementation phase.
 deno task check   # type-check all packages
 deno task lint
 deno task fmt
+deno task test    # run the test suite
 ```
+
+Tests live in each package's `tests/` directory (never alongside source) and are named by the kind
+of test they are — unit tests use the `*.unit.ts` suffix. Fixtures live under `tests/testdata/`.
 
 ## License
 
