@@ -11,19 +11,44 @@
  * @module
  */
 
+import { serializeNode } from "./serialize.ts";
 import type { Taxonomy } from "./taxonomy.ts";
 import type { GovNode, Graph } from "./types.ts";
 
 /**
- * Render the governance INDEX markdown for a built {@link Graph}. Counts are
- * derived live; the masterplan list reflects current titles and statuses. The
- * output is deterministic (node types in taxonomy order, masterplans by id).
+ * Render the governance INDEX as a complete node document: a YAML frontmatter
+ * header (so the regenerated INDEX is itself a valid `index` node and round-trips
+ * through the loader) followed by the generated body. Counts are derived live;
+ * the masterplan list reflects current titles and statuses. The output is
+ * deterministic (node types in taxonomy order, masterplans by id).
+ *
+ * An existing `index` node's frontmatter is preserved (uid, id, dates, owner);
+ * if none exists yet, minimal index frontmatter is synthesized.
  */
-export function renderIndex(graph: Graph, taxonomy: Taxonomy): string {
+export function renderIndex(graph: Graph, _taxonomy: Taxonomy): string {
+  return serializeNode(indexFrontmatter(graph), renderBody(graph, _taxonomy));
+}
+
+/** Preserve the existing index node's frontmatter, or synthesize a minimal one. */
+function indexFrontmatter(graph: Graph): Record<string, unknown> {
+  const existing = [...graph.byId.values()].find((n) => n.nodeType === "index");
+  if (existing) return existing.frontmatter;
+  return {
+    uid: crypto.randomUUID(),
+    id: "governance-index",
+    node_type: "index",
+    status: "active",
+    title: "Governance Index",
+  };
+}
+
+/** Render the generated INDEX body (everything below the frontmatter). */
+function renderBody(graph: Graph, taxonomy: Taxonomy): string {
   const nodes = [...graph.byId.values()];
   const root = nodes.find((n) => n.nodeType === "project");
 
   const lines: string[] = [
+    "",
     "# Governance Index",
     "",
     "> **Generated view.** The source of truth is the `.governance/` node graph (frontmatter edges),",
@@ -51,7 +76,7 @@ export function renderIndex(graph: Graph, taxonomy: Taxonomy): string {
     lines.push("");
   }
 
-  return lines.join("\n");
+  return lines.join("\n") + "\n";
 }
 
 /** A node's `title`, or its id if untitled. */
