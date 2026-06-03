@@ -1,4 +1,4 @@
-# Governor
+# Governor (WIP PRE-ALPHA - NOT STABLE)
 
 Portable, git-native governance for any repository.
 
