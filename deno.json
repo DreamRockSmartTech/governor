@@ -1,0 +1,23 @@
+{
+  "workspace": [
+    "./core",
+    "./cli",
+    "./meta"
+  ],
+  "tasks": {
+    "check": "deno check core/mod.ts cli/mod.ts meta/mod.ts",
+    "lint": "deno lint",
+    "fmt": "deno fmt"
+  },
+  "fmt": {
+    "useTabs": false,
+    "lineWidth": 100,
+    "indentWidth": 2,
+    "singleQuote": false
+  },
+  "lint": {
+    "rules": {
+      "tags": ["recommended"]
+    }
+  }
+}
