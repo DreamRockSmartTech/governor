@@ -9,6 +9,7 @@
  */
 
 import { parseArgs } from "@std/cli/parse-args";
+import { runInit } from "./commands/init.ts";
 import { runCheck } from "./commands/check.ts";
 import { runIndex } from "./commands/index.ts";
 import { runNew } from "./commands/new.ts";
@@ -24,6 +25,9 @@ const EDGE_FLAGS = ["parent", "blocks", "blocked_by", "supersedes", "superseded_
 
 /** Top-level `--help` text describing the command surface. */
 export const HELP = `governor — git-native governance toolkit
+
+Setup:
+  governor init [--root <path>]              Install git hooks + assert signing mandate
 
 Read:
   governor check [--root <path>] [--json]    Validate a .governance/ tree
@@ -63,6 +67,8 @@ export async function dispatch(argv: string[], version: string): Promise<number>
   }
 
   switch (command) {
+    case "init":
+      return await runInit({ root: flags.root });
     case "check":
       return await runCheck({ root: flags.root, json: Boolean(flags.json) });
     case "index":
