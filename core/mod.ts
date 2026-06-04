@@ -37,6 +37,18 @@ export {
 export type { CreateResult, NewNodeSpec } from "./src/mutate.ts";
 export { runGate } from "./src/gate-runner.ts";
 export type { GateResult } from "./src/gate-runner.ts";
+export { readGitConfig, readGitConfigAll, setGitConfig } from "./src/git.ts";
+export {
+  defaultPolicyHook,
+  ENGINE_DIR,
+  HOOK_NAMES,
+  HOOKS_PATH,
+  missingSigningKeys,
+  POLICY_DIR,
+  SIGNING_MANDATE_KEYS,
+  stubScript,
+  WRAPPER,
+} from "./src/hooks.ts";
 export {
   DEFAULT_TAXONOMY,
   isStatusField,

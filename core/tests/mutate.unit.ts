@@ -30,15 +30,31 @@ Deno.test("createNode builds a valid node and wires the reverse edge on the pare
     nodeType: "epic",
     nn: 7,
     title: "New Epic",
+    owner: "justin@example.com",
     edges: { parent: "masterplan-01-x" },
     taxonomy: DEFAULT_TAXONOMY,
   });
 
   assertEquals(result.node.id, "epic-07-new-epic");
   assertEquals(result.node.frontmatter.parent, "masterplan-01-x");
+  // owner is auto-stamped from the committer identity passed in the spec.
+  assertEquals(result.node.frontmatter.owner, "justin@example.com");
   // The masterplan gains children: [epic-07-new-epic].
   const updatedMp = result.updated.find((n) => n.id === "masterplan-01-x")!;
   assertEquals(updatedMp.frontmatter.children, ["epic-07-new-epic"]);
+});
+
+Deno.test("createNode omits owner when none is supplied", () => {
+  const graph = buildGraph([], DEFAULT_TAXONOMY);
+
+  const result = createNode(graph, {
+    nodeType: "workitem",
+    nn: 1,
+    title: "No owner",
+    taxonomy: DEFAULT_TAXONOMY,
+  });
+
+  assertEquals("owner" in result.node.frontmatter, false);
 });
 
 Deno.test("setField updates a non-structural scalar", () => {

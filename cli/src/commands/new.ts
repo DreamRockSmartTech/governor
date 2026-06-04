@@ -9,7 +9,14 @@
  * @module
  */
 
-import { allocate, createNode, DEFAULT_TAXONOMY, MutationError } from "@dreamrock/governor-core";
+import { dirname } from "@std/path";
+import {
+  allocate,
+  createNode,
+  DEFAULT_TAXONOMY,
+  MutationError,
+  readGitConfig,
+} from "@dreamrock/governor-core";
 import { loadGraph, regenIndex, writeNode } from "../write.ts";
 
 /** Options for the new command. */
@@ -34,12 +41,15 @@ export async function runNew(opts: NewOptions): Promise<number> {
 
   const graph = await loadGraph(opts.root);
   const nn = await allocate(opts.root, opts.nodeType, graph);
+  // Auto-stamp owner = committer identity (stewardship record, not approval).
+  const owner = (await readGitConfig(dirname(opts.root), "user.email")) ?? undefined;
 
   try {
     const { node, updated } = createNode(graph, {
       nodeType: opts.nodeType,
       nn,
       title: opts.title,
+      owner,
       edges: opts.edges,
       taxonomy: DEFAULT_TAXONOMY,
     });

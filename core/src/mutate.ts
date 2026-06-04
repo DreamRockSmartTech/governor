@@ -38,6 +38,8 @@ export interface NewNodeSpec {
   /** The allocated `{NN}` (the caller allocates via the counter file). */
   nn: number;
   title: string;
+  /** Stewardship identity (committer's git `user.email`); omitted if absent. */
+  owner?: string;
   /** Declared edges, e.g. `{ parent: "masterplan-01-x" }` (one target each). */
   edges?: Record<string, string>;
   taxonomy: Taxonomy;
@@ -66,6 +68,7 @@ export function createNode(graph: Graph, spec: NewNodeSpec): CreateResult {
     node_type: nodeType,
     status: defaultStatus(nodeType, taxonomy),
     title,
+    ...(spec.owner ? { owner: spec.owner } : {}),
     ...edges,
   };
   const node: GovNode = {

@@ -5,6 +5,44 @@ All notable changes to Governor are recorded here. Versions follow
 
 ## Unreleased
 
+### Changed — approval authority scoped out; `owner` auto-stamped (ADR-0001)
+
+A design correction (see
+[docs/decisions/ADR-0001](docs/decisions/ADR-0001-approval-authority-scope.md)).
+
+- **`approved_by` is out of Governor's scope.** It is not stamped, derived, or enforced. The one
+  place a _verified_ approver belongs — recorded at merge — cannot be done git-natively across both
+  bare-repo and cloud-host worlds without monkey-patching (local git can't verify-and-record in one
+  commit; cloud approval lives in the platform API, not a signing key). Approval authority is
+  **owned by the host's review system** (required reviewers + branch protection), a documented
+  stage-3 seam. An `approved_by` value in a consuming tree is tolerated but not managed.
+- **`owner` is auto-stamped from the committer.** `governor new` sets `owner` = the committer's git
+  `user.email` (stewardship, not approval). `createNode` takes an optional `owner` in its spec;
+  omitted when git config has no email.
+- DESIGN.md updated to reverse the prior "derive `approved_by` from the verified signer" wording.
+
+### Added — git-hook integration (Husky-shaped) + `governor init`
+
+Wire the controls into the git lifecycle so enforcement is automatic, not opt-in.
+
+- `governor init` — the installer. Asserts the git-config signing mandate (`user.name`,
+  `user.email`, `commit.gpgsign=true`, `gpg.program`, `user.signingkey`) and **fails hard** if any
+  is missing; sets `core.hooksPath` to Governor's hook dir; lays down the two-tier layout and seeds
+  default hooks. Idempotent; never clobbers an edited policy hook.
+- **Two-tier layout** (engine/policy split, à la Husky): `.governance/hooks/_/` is generated and
+  **gitignored** (the `governor.sh` wrapper + a per-hook stub git actually runs);
+  `.governance/hooks/<name>` are committed, repo-owned, editable policy hooks.
+- **Shipped defaults:** `pre-commit` → `governor check` (rejects a commit when the governance tree
+  is invalid — the enforcement teeth for the control-5 keystone); `commit-msg` → placeholder for the
+  review-boundary check (control 6, later).
+- **Bypass:** `GOVERNOR=0` (and git's `--no-verify`) skips the hooks — rigid default, conscious
+  on-record override.
+- Core gains `core/src/hooks.ts` (pure layout/content + `missingSigningKeys`) and `core/src/git.ts`
+  (git-config read/write wrappers).
+
+Verified end-to-end on a scratch repo: `init` fails hard without signing config; with it, the hooks
+install and `pre-commit` blocks an invalid tree, allows a valid one, and `GOVERNOR=0` bypasses.
+
 ### Added — write path (plumbing) + gate-proof runner
 
 The mutation surface: the only valid way to change a `.governance/` tree, with every invariant
