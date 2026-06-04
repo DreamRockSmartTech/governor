@@ -74,8 +74,8 @@ governor check
 `;
     case "commit-msg":
       return `#!/usr/bin/env sh
-# Governor default commit-msg — placeholder for the review-boundary check and
-# approved_by stamping (control 6 + authority). Edit to customize.
+# Governor default commit-msg — placeholder for the review-boundary check
+# (control 6). Edit to customize. (Approval stamping is out of scope; see ADR-0001.)
 exit 0
 `;
     default:

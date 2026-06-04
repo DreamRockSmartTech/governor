@@ -34,7 +34,7 @@ Wire the controls into the git lifecycle so enforcement is automatic, not opt-in
   `.governance/hooks/<name>` are committed, repo-owned, editable policy hooks.
 - **Shipped defaults:** `pre-commit` → `governor check` (rejects a commit when the governance tree
   is invalid — the enforcement teeth for the control-5 keystone); `commit-msg` → placeholder for the
-  review-boundary check + `approved_by` stamping (authority work, later).
+  review-boundary check (control 6, later).
 - **Bypass:** `GOVERNOR=0` (and git's `--no-verify`) skips the hooks — rigid default, conscious
   on-record override.
 - Core gains `core/src/hooks.ts` (pure layout/content + `missingSigningKeys`) and `core/src/git.ts`
