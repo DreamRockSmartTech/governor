@@ -181,14 +181,42 @@ view, never hand-maintained.
 
 ### 6. Review-boundary check
 
-One **WorkItem per commit-group** keeps review small and focused, and keeps git-history-as-record
-mapping cleanly one-change-to-one-commit.
+One **WorkItem per commit** keeps review small and focused, and keeps git-history-as-record mapping
+cleanly one-change-to-one-commit. The control exists to protect **reviewability** — to stop the
+runaway-batch failure where an agent dumps many units of work into one commit that no human can
+review.
 
-- "commit-group" defaults to a **single focused commit**; the unit is **team-configurable** later
-  (git-flow strategy varies — some teams review per-PR). Heuristic for now.
-- More than one WorkItem in a commit-group → **warn, permitted with an override**: a commit-message
-  **trailer** (`Governor-Allow-Multi: <reason>`). Non-interactive, scriptable, and on the git record
-  — consistent with the gate `partial` bypass pattern.
+**What is enforceable vs. what is not (be honest about the boundary).** "Did the actor honestly
+decompose the work into the right number of WorkItems?" is a _semantic judgment_ the repo cannot
+make — every input a check reads (node mutations, trailers, comments) is written by the same actor,
+so self-reported scope can never validate against self-interested under-reporting. That judgment is
+**irreducibly delegated to human review**. Governor's job is not to replace the reviewer but to make
+review **small, framed, and unavoidable** — and to leave an honest trace. So the control enforces
+_evidence-grounded proxies_ and surfaces _signals_, never claiming to certify decomposition.
+
+- **Unit = a single staged WorkItem node.** The check counts distinct `workitem-*` node files in the
+  staged set (`git diff --cached`) — evidence the actor cannot under-report without failing to
+  record the work it actually did.
+- **Exactly one WorkItem node per commit.** **0** staged WorkItem nodes (code with no work-node) or
+  **>1** → **blocked**, permitted only with an on-record commit-message **trailer**
+  (`Governor-Allow-Multi: <reason>`). Non-interactive, scriptable, on the git record — the same
+  rigid-default / conscious-override pattern as the gate `partial` bypass.
+- **Evidence-derived binding trailer.** The check stamps the bound WorkItem id into the commit
+  message **from the staged node**, not from actor free-text — so the code↔workstream link reflects
+  evidence, not assertion.
+- **Scope-vs-churn signal (advisory).** When the diff size vastly exceeds what a single WorkItem
+  plausibly implies (a configurable threshold), the check **warns** — surfacing the mismatch between
+  _claimed_ scope and _actual_ churn for the reviewer to judge. It does not block (it cannot know).
+- **Not enforceable, by design:** honest work decomposition (the "3 features crammed into 1 node"
+  case). No in-repo, actor-controlled check can guarantee this; it is the human reviewer's
+  irreducible job, which this control protects rather than supplants.
+- "commit-group" defaults to the **single commit**; the unit is **team-configurable** later (some
+  teams review per-PR). Single-commit heuristic for now.
+
+A complementary **AI skill** (packaged + installed into the consuming repo, alongside the hooks)
+ships the _cooperative_ layer — instruction on one-WorkItem-per-commit discipline. The skill shapes
+the default behavior; the hook enforces the proxies; the reviewer judges decomposition. Defense in
+depth, not a single lock. (Skill packaging is a separate slice.)
 
 ---
 
@@ -234,10 +262,10 @@ repo ships the _policy_).
 
 ### Shipped default hooks (sensible defaults, all overridable)
 
-| Hook         | Default action                                                                                                                                                                                         |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `pre-commit` | `governor check` on the staged tree → **reject the commit on any error**. This is the enforcement teeth that makes "out-of-band structural change is a HARD FAIL" (control 5) real rather than opt-in. |
-| `commit-msg` | Review-boundary check (control 6) + the `Governor-Allow-Multi` trailer override. (Approval stamping is **out of scope** — see ADR-0001.)                                                               |
+| Hook         | Default action                                                                                                                                                                                                                               |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pre-commit` | `governor check` on the staged tree → **reject the commit on any error**. This is the enforcement teeth that makes "out-of-band structural change is a HARD FAIL" (control 5) real rather than opt-in.                                       |
+| `commit-msg` | Review-boundary check (control 6): exactly one staged WorkItem node else block (or `Governor-Allow-Multi` override); stamp the evidence-derived binding trailer; warn on scope-vs-churn. (Approval stamping is **out of scope** — ADR-0001.) |
 
 A consuming repo may **edit, replace, or remove** any policy hook, and **add** scripts for other git
 lifecycle events (`pre-push`, `post-merge`, …) — the wrapper runs whatever policy file exists for a
