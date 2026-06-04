@@ -5,6 +5,25 @@ All notable changes to Governor are recorded here. Versions follow
 
 ## Unreleased
 
+### Added — review-boundary check (control 6)
+
+The last governance control: one staged WorkItem node per commit, protecting reviewability against
+runaway batches. Enforces evidence-grounded proxies and surfaces signals; honest work decomposition
+remains delegated to human review (it cannot be certified in-repo — see DESIGN.md control 6).
+
+- `governor review-check <msg-file>` (hook-invoked at `commit-msg`): counts distinct staged
+  `workitem-*` nodes. **0** (code with no work-node) or **>1** → **blocks** the commit, unless a
+  non-empty `Governor-Allow-Multi: <reason>` trailer overrides (on the git record). On a clean
+  single-node commit it stamps an evidence-derived `Governor-WorkItem: <id>` binding trailer (from
+  the staged node, not actor free-text). Staged diff churn above `governor.churnThreshold` (default
+  400) → an advisory `scope-vs-churn` **warning** (never blocks).
+- Core: `review-boundary.ts` (pure rules + `parseTrailer`/`appendTrailer`); `git.ts` gains
+  `stagedFiles` / `stagedChurn`.
+- The default `commit-msg` hook now calls `governor review-check "$1"`.
+
+Verified end-to-end: single-node commit passes + gets the trailer; multi-node and no-node commits
+block (override works); oversized single-node diff warns but commits.
+
 ### Changed — approval authority scoped out; `owner` auto-stamped (ADR-0001)
 
 A design correction (see

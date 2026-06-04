@@ -28,6 +28,7 @@ governor set <id> <field> <value>          # set a plain frontmatter scalar
 governor edge add|rm <from> <kind> <to>    # add/remove a structural edge (both sides maintained)
 governor status <id> <new-status>          # transition a work/plan status
 governor gate run <id> | --all             # run a gate's proof; write its machine-owned status
+governor review-check <msg-file>           # review-boundary check (one WorkItem/commit; hook-invoked)
 
 governor version
 ```
