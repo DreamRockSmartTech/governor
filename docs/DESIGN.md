@@ -48,15 +48,25 @@ escape hatch.** The tool has an opinion; a human can consciously override; the o
 
 ## Authority & the approval record
 
-`approved_by` / `owner` are a **record of an authorizing signal — not a permission**. Access control
-is explicitly **out of scope**: if you can commit to the repo, you have authority to act. The
-signature records _which_ authorized actor acted, not _whether_ they were allowed.
+Authority is a **record, not a permission**. Access control is **out of scope**: if you can commit
+to the repo, you have authority to act. Two distinct concerns, deliberately split (see
+[ADR-0001](decisions/ADR-0001-approval-authority-scope.md)):
+
+- **`owner` — stewardship, Governor-managed.** Every node carries `owner` = the committing user's
+  git-config identity (`user.email`), **auto-stamped at creation**. It records _who is responsible
+  for_ the node, not _who approved_ it. A convenience record; git history is the real authority.
+- **`approved_by` — approval, OUT OF SCOPE for Governor.** Approval is a human sign-off that only a
+  `decision` node meaningfully needs, and the one place it belongs — a _verified_ approver recorded
+  at merge — **cannot be done git-natively across both bare-repo and cloud-host worlds without
+  monkey-patching** (local git can't verify-and-record in one commit; cloud approval lives in the
+  platform, not a signing key). So **approval authority is owned by the host's review system**
+  (required reviewers + branch protection on a cloud host; the team's process on a bare repo).
+  Governor neither stamps nor enforces it. This is a documented **stage-3 seam** (below), not a
+  built feature. An `approved_by` value in a consuming tree is tolerated but not managed.
 
 - **Init mandate:** `governor init` (see _Distribution & git-hook integration_) requires git config
   to have `user.name`, `user.email`, `commit.gpgsign=true`, `gpg.program`, and `user.signingkey`. It
   **fails hard** if these are missing — signing is the trust root.
-- `approved_by` is **derived/stamped from the verified commit signer** (mutate model — the typed-in
-  value is not trusted).
 
 ### Three record stages (only stage 1 is built in v1)
 
@@ -70,11 +80,12 @@ The record can be written at three stages, each a different signal. **v1 recogni
 3. **Cloud host.** GitHub/GitLab/Bitbucket PR/MR merge approval (approver ≠ commit author), via
    API/webhook. Approver identity lives in the host API, not the commit.
 
-**Boundary statement:** the `approved_by`/`owner` field shapes, the gate-`status` model, and the
-optional provenance trailer are designed so additional signals (CI, cloud) can populate the _same_
-records later **without schema or semantic change**. The tool degrades gracefully: absent CI/cloud,
-the local signal is authoritative; present, they enrich the record. Multi-signal-ready, not
-multi-signal-built.
+**Boundary statement:** v1 records exactly the **local** signals Governor manages — `owner`
+(committer identity) and the machine-owned gate `status`. **Approval** at stages 2 and 3 (CI
+sign-off, cloud PR/MR merge approval) is **owned by the host**, not stamped into the tree by
+Governor (ADR-0001). The `owner` field shape and the gate-`status` model are stable, so a host
+integration could later attach its own approval record alongside them **without schema change** —
+but that integration is the host's, not Governor's. Multi-signal-aware, not multi-signal-built.
 
 ---
 
@@ -226,7 +237,7 @@ repo ships the _policy_).
 | Hook         | Default action                                                                                                                                                                                         |
 | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `pre-commit` | `governor check` on the staged tree → **reject the commit on any error**. This is the enforcement teeth that makes "out-of-band structural change is a HARD FAIL" (control 5) real rather than opt-in. |
-| `commit-msg` | Review-boundary check (control 6) + the `Governor-Allow-Multi` trailer override; the seam for `approved_by` stamping from the verified signer (authority section).                                     |
+| `commit-msg` | Review-boundary check (control 6) + the `Governor-Allow-Multi` trailer override. (Approval stamping is **out of scope** — see ADR-0001.)                                                               |
 
 A consuming repo may **edit, replace, or remove** any policy hook, and **add** scripts for other git
 lifecycle events (`pre-push`, `post-merge`, …) — the wrapper runs whatever policy file exists for a
