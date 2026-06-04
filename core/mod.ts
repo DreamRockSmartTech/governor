@@ -37,7 +37,21 @@ export {
 export type { CreateResult, NewNodeSpec } from "./src/mutate.ts";
 export { runGate } from "./src/gate-runner.ts";
 export type { GateResult } from "./src/gate-runner.ts";
-export { readGitConfig, readGitConfigAll, setGitConfig } from "./src/git.ts";
+export {
+  readGitConfig,
+  readGitConfigAll,
+  setGitConfig,
+  stagedChurn,
+  stagedFiles,
+} from "./src/git.ts";
+export {
+  ALLOW_MULTI,
+  appendTrailer,
+  parseTrailer,
+  reviewBoundary,
+  WORKITEM_TRAILER,
+} from "./src/review-boundary.ts";
+export type { ReviewInput, ReviewResult } from "./src/review-boundary.ts";
 export {
   defaultPolicyHook,
   ENGINE_DIR,

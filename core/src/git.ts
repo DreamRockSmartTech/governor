@@ -41,3 +41,22 @@ export async function setGitConfig(cwd: string, key: string, value: string): Pro
   const { code } = await git(cwd, ["config", key, value]);
   if (code !== 0) throw new Error(`git config ${key} failed`);
 }
+
+/** List the paths currently staged in the index (`git diff --cached`). */
+export async function stagedFiles(cwd: string): Promise<string[]> {
+  const { stdout } = await git(cwd, ["diff", "--cached", "--name-only"]);
+  return stdout.length === 0 ? [] : stdout.split("\n");
+}
+
+/** Sum of added + deleted lines across the staged diff (`--numstat`). */
+export async function stagedChurn(cwd: string): Promise<number> {
+  const { stdout } = await git(cwd, ["diff", "--cached", "--numstat"]);
+  if (stdout.length === 0) return 0;
+  let total = 0;
+  for (const line of stdout.split("\n")) {
+    const [added, deleted] = line.split("\t");
+    // Binary files report "-"; treat as 0.
+    total += (Number(added) || 0) + (Number(deleted) || 0);
+  }
+  return total;
+}
