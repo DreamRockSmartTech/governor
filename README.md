@@ -7,16 +7,21 @@ decisions, and work items — stored as plain files in the repo and enforced wit
 and signature-backed authority checks. The graph degrades to plain `ls`/`cat`; no renderer or
 service is required.
 
-> **Status:** early development (`0.0.1`). The first working slice of the engine has landed: a repo
-> can be loaded, validated, mutated, and have its gates run. The commands below are **plumbing** —
-> precise, graph-aware primitives (à la git). Task-shaped **porcelain** that wraps them for everyday
-> human use comes later.
+> **Status:** early development (`0.0.1`). The engine is working end-to-end: a repo can be loaded,
+> validated, mutated, gated, and governed via git hooks — with both **plumbing** (precise,
+> graph-aware primitives) and **porcelain** (task-shaped `next`/`work`/`done`) command layers, à la
+> git.
 
 ## Commands
 
 ```sh
 # Setup
 governor init [--root <path>]              # install git hooks + assert the signing mandate
+
+# Workflow (porcelain)
+governor next [--root <path>]              # list unblocked open WorkItems ("what can I do?")
+governor work <id>                         # orientation view for a node (read-only)
+governor done <id>                         # run the produced gate, then complete the node
 
 # Read
 governor check [--root <path>] [--json]    # validate a .governance/ tree (exit 1 on any error)
@@ -39,6 +44,11 @@ unset), points `core.hooksPath` at `.governance/hooks/_` (a generated, gitignore
 seeds editable policy hooks in `.governance/hooks/`. The default `pre-commit` runs `governor check`
 and rejects a commit when the tree is invalid; teams edit/extend the policy hooks freely. Bypass
 with `GOVERNOR=0` (or `git --no-verify`).
+
+The **workflow** commands are porcelain — thin, task-shaped compositions of the plumbing (the way
+git `pull` wraps `fetch`+`merge`). `next` finds ready work, `work` orients you on an item, and
+`done` runs its gate and completes it. They add no new guarantees; they're convenience over the
+primitives.
 
 `check` runs the schema/grammar validator (id grammar, node type, status enum, uid, monotonic `{NN}`
 uniqueness) and graph-integrity checks (structural-edge symmetry, dangling edges) over the whole
