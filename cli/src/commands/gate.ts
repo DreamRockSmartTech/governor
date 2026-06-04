@@ -7,6 +7,7 @@
  * @module
  */
 
+import { dirname } from "@std/path";
 import { type GovNode, type Graph, runGate } from "@dreamrock/governor-core";
 import { loadGraph, regenIndex, writeNode } from "../write.ts";
 
@@ -33,7 +34,7 @@ export async function runGateCommand(opts: GateOptions): Promise<number> {
 
   let anyFailed = false;
   for (const gate of gates) {
-    const result = await runGate(gate, opts.root);
+    const result = await runGate(gate, dirname(opts.root));
     await writeNode(opts.root, result.node);
     console.log(`${gate.id}: ${result.status}`);
     if (result.output.trim()) console.log(indent(result.output.trim()));

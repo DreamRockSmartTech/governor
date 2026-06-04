@@ -34,6 +34,20 @@ Deno.test("runGate maps exit 0 to cleared", async () => {
   assertEquals(result.node.frontmatter.status, "cleared");
 });
 
+Deno.test("runGate resolves the runnable against the repo root (the cwd it is given)", async () => {
+  // The script lives at the repo root and reads a repo-root file via cwd —
+  // proving runnable + cwd are the passed root, not a nested governance dir.
+  const repoRoot = await rootWithScript("proof.sh", "#!/bin/sh\ntest -f marker\n");
+  await Deno.writeTextFile(join(repoRoot, "marker"), "x");
+  const node = gate({
+    criteria_check: { runnable: "proof.sh", description: "d", expectation: "e" },
+  });
+
+  const result = await runGate(node, repoRoot);
+
+  assertEquals(result.status, "cleared");
+});
+
 Deno.test("runGate maps exit 1 to failed", async () => {
   const root = await rootWithScript("fail.sh", "#!/bin/sh\necho boom >&2\nexit 1\n");
   const node = gate({
