@@ -13,6 +13,9 @@ import { runInit } from "./commands/init.ts";
 import { runCheck } from "./commands/check.ts";
 import { runIndex } from "./commands/index.ts";
 import { runReviewCheck } from "./commands/review-check.ts";
+import { runNext } from "./commands/next.ts";
+import { runWork } from "./commands/work.ts";
+import { runDone } from "./commands/done.ts";
 import { runNew } from "./commands/new.ts";
 import { runSet } from "./commands/set.ts";
 import { runEdge } from "./commands/edge.ts";
@@ -29,6 +32,11 @@ export const HELP = `governor — git-native governance toolkit
 
 Setup:
   governor init [--root <path>]              Install git hooks + assert signing mandate
+
+Workflow (porcelain):
+  governor next [--root <path>]              List unblocked open WorkItems
+  governor work <id>                         Orientation view for a node (read-only)
+  governor done <id>                         Run produced gate, then complete the node
 
 Read:
   governor check [--root <path>] [--json]    Validate a .governance/ tree
@@ -112,6 +120,12 @@ export async function dispatch(argv: string[], version: string): Promise<number>
       });
     case "review-check":
       return await runReviewCheck({ root: flags.root, messageFile: positional[1] ?? "" });
+    case "next":
+      return await runNext({ root: flags.root });
+    case "work":
+      return await runWork({ root: flags.root, id: positional[1] ?? "" });
+    case "done":
+      return await runDone({ root: flags.root, id: positional[1] ?? "" });
     case "version":
       console.log(version);
       return 0;
