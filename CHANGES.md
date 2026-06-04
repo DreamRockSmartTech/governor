@@ -5,6 +5,46 @@ All notable changes to Governor are recorded here. Versions follow
 
 ## Unreleased
 
+### Added — porcelain workflow verbs (`next` / `work` / `done`)
+
+Task-shaped commands that compose the plumbing (à la git porcelain) for the pick → orient → finish
+loop. **No new core logic** — pure CLI orchestration over existing core functions.
+
+- `governor next` — list **open, unblocked** WorkItems (every `blocked_by` target is done, or none).
+  "What can I work on now?"
+- `governor work <id>` — read-only orientation view: status, frozen?, each blocker's done-state,
+  what it blocks, its produced gate, a body excerpt. (No status change — the work/plan enum has no
+  `in_progress` state and Governor does not invent one.)
+- `governor done <id>` — finish a node: run its `produces_gate` (the proof-of-done); complete the
+  node only if the gate clears (or there is no gate); regenerate the INDEX. A failing gate leaves
+  the node open and exits 1.
+
+### Fixed
+
+- **Gate runner resolves `criteria_check.runnable` against the repo root** (parent of
+  `.governance/`), with the repo root as cwd — a gate's proof tests the project, which lives at the
+  repo root, not inside the governance tree. Previously it resolved against the `.governance/` dir.
+  Surfaced by the porcelain `done` E2E.
+
+### Added — review-boundary check (control 6)
+
+The last governance control: one staged WorkItem node per commit, protecting reviewability against
+runaway batches. Enforces evidence-grounded proxies and surfaces signals; honest work decomposition
+remains delegated to human review (it cannot be certified in-repo — see DESIGN.md control 6).
+
+- `governor review-check <msg-file>` (hook-invoked at `commit-msg`): counts distinct staged
+  `workitem-*` nodes. **0** (code with no work-node) or **>1** → **blocks** the commit, unless a
+  non-empty `Governor-Allow-Multi: <reason>` trailer overrides (on the git record). On a clean
+  single-node commit it stamps an evidence-derived `Governor-WorkItem: <id>` binding trailer (from
+  the staged node, not actor free-text). Staged diff churn above `governor.churnThreshold` (default
+  400) → an advisory `scope-vs-churn` **warning** (never blocks).
+- Core: `review-boundary.ts` (pure rules + `parseTrailer`/`appendTrailer`); `git.ts` gains
+  `stagedFiles` / `stagedChurn`.
+- The default `commit-msg` hook now calls `governor review-check "$1"`.
+
+Verified end-to-end: single-node commit passes + gets the trailer; multi-node and no-node commits
+block (override works); oversized single-node diff warns but commits.
+
 ### Changed — approval authority scoped out; `owner` auto-stamped (ADR-0001)
 
 A design correction (see

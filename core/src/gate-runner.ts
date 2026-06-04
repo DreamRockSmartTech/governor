@@ -26,19 +26,21 @@ export interface GateResult {
 }
 
 /**
- * Run `gate`'s `criteria_check.runnable` with the tree `root` as cwd, map the
- * exit code to a status, and return the updated node. The runnable path is
- * resolved relative to `root`. A gate with no runnable fails closed.
+ * Run `gate`'s `criteria_check.runnable` with `repoRoot` as cwd, map the exit
+ * code to a status, and return the updated node. The runnable path is resolved
+ * relative to `repoRoot` (the repository root, parent of `.governance/`) — a
+ * gate's proof tests the project, which lives at the repo root, not inside the
+ * governance tree. A gate with no runnable fails closed.
  */
-export async function runGate(gate: GovNode, root: string): Promise<GateResult> {
+export async function runGate(gate: GovNode, repoRoot: string): Promise<GateResult> {
   const runnable = readRunnable(gate);
   if (!runnable) {
     return finish(gate, "failed", "no criteria_check.runnable defined");
   }
 
   try {
-    const command = new Deno.Command(join(root, runnable), {
-      cwd: root,
+    const command = new Deno.Command(join(repoRoot, runnable), {
+      cwd: repoRoot,
       stdout: "piped",
       stderr: "piped",
     });
