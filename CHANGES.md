@@ -5,6 +5,28 @@ All notable changes to Governor are recorded here. Versions follow
 
 ## Unreleased
 
+### Added — git-hook integration (Husky-shaped) + `governor init`
+
+Wire the controls into the git lifecycle so enforcement is automatic, not opt-in.
+
+- `governor init` — the installer. Asserts the git-config signing mandate (`user.name`,
+  `user.email`, `commit.gpgsign=true`, `gpg.program`, `user.signingkey`) and **fails hard** if any
+  is missing; sets `core.hooksPath` to Governor's hook dir; lays down the two-tier layout and seeds
+  default hooks. Idempotent; never clobbers an edited policy hook.
+- **Two-tier layout** (engine/policy split, à la Husky): `.governance/hooks/_/` is generated and
+  **gitignored** (the `governor.sh` wrapper + a per-hook stub git actually runs);
+  `.governance/hooks/<name>` are committed, repo-owned, editable policy hooks.
+- **Shipped defaults:** `pre-commit` → `governor check` (rejects a commit when the governance tree
+  is invalid — the enforcement teeth for the control-5 keystone); `commit-msg` → placeholder for the
+  review-boundary check + `approved_by` stamping (authority work, later).
+- **Bypass:** `GOVERNOR=0` (and git's `--no-verify`) skips the hooks — rigid default, conscious
+  on-record override.
+- Core gains `core/src/hooks.ts` (pure layout/content + `missingSigningKeys`) and `core/src/git.ts`
+  (git-config read/write wrappers).
+
+Verified end-to-end on a scratch repo: `init` fails hard without signing config; with it, the hooks
+install and `pre-commit` blocks an invalid tree, allows a valid one, and `GOVERNOR=0` bypasses.
+
 ### Added — write path (plumbing) + gate-proof runner
 
 The mutation surface: the only valid way to change a `.governance/` tree, with every invariant

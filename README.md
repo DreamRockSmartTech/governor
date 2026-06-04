@@ -15,6 +15,9 @@ service is required.
 ## Commands
 
 ```sh
+# Setup
+governor init [--root <path>]              # install git hooks + assert the signing mandate
+
 # Read
 governor check [--root <path>] [--json]    # validate a .governance/ tree (exit 1 on any error)
 governor index [--root <path>] [--write]   # regenerate the INDEX view (stdout, or --write the file)
@@ -28,6 +31,13 @@ governor gate run <id> | --all             # run a gate's proof; write its machi
 
 governor version
 ```
+
+`init` installs Governor into a repo's git lifecycle (Husky-shaped). It asserts the signing mandate
+(failing hard if `user.name`/`user.email`/`commit.gpgsign`/`gpg.program`/`user.signingkey` are
+unset), points `core.hooksPath` at `.governance/hooks/_` (a generated, gitignored engine layer), and
+seeds editable policy hooks in `.governance/hooks/`. The default `pre-commit` runs `governor check`
+and rejects a commit when the tree is invalid; teams edit/extend the policy hooks freely. Bypass
+with `GOVERNOR=0` (or `git --no-verify`).
 
 `check` runs the schema/grammar validator (id grammar, node type, status enum, uid, monotonic `{NN}`
 uniqueness) and graph-integrity checks (structural-edge symmetry, dangling edges) over the whole
