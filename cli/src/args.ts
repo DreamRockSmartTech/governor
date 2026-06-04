@@ -12,6 +12,7 @@ import { parseArgs } from "@std/cli/parse-args";
 import { runInit } from "./commands/init.ts";
 import { runCheck } from "./commands/check.ts";
 import { runIndex } from "./commands/index.ts";
+import { runReviewCheck } from "./commands/review-check.ts";
 import { runNew } from "./commands/new.ts";
 import { runSet } from "./commands/set.ts";
 import { runEdge } from "./commands/edge.ts";
@@ -40,6 +41,7 @@ Write (plumbing):
   governor edge add|rm <from> <kind> <to>    Add/remove a structural edge
   governor status <id> <new-status>          Transition a work/plan status
   governor gate run <id> | --all             Run a gate's proof; write status
+  governor review-check <msg-file>           Review-boundary check (hook-invoked)
 
   governor version                           Print the version
   governor --help                            Show this help
@@ -108,6 +110,8 @@ export async function dispatch(argv: string[], version: string): Promise<number>
         id: positional[2] ?? null,
         all: Boolean(flags.all),
       });
+    case "review-check":
+      return await runReviewCheck({ root: flags.root, messageFile: positional[1] ?? "" });
     case "version":
       console.log(version);
       return 0;

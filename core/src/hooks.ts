@@ -74,9 +74,10 @@ governor check
 `;
     case "commit-msg":
       return `#!/usr/bin/env sh
-# Governor default commit-msg — placeholder for the review-boundary check
-# (control 6). Edit to customize. (Approval stamping is out of scope; see ADR-0001.)
-exit 0
+# Governor default commit-msg — review-boundary check (control 6): one staged
+# WorkItem node per commit; stamps the Governor-WorkItem binding trailer. Edit to
+# customize. (Approval stamping is out of scope; see ADR-0001.)
+governor review-check "$1"
 `;
     default:
       return `#!/usr/bin/env sh
