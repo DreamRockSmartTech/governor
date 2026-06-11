@@ -14,4 +14,9 @@ children:
   - workitem-05-staged-snapshot-check-out-of-band-enforcement
   - workitem-06-legacy-criteria-check-warning-and-gate-partial-display
   - workitem-07-agent-skill-package
+  - workitem-08-cli-robustness-nits
+  - workitem-09-gate-run-partial-display
+  - workitem-10-cli-integration-harness
+  - workitem-11-continuous-integration-workflow
+  - workitem-12-release-zero-one-zero-prep
 ---
