@@ -93,12 +93,19 @@ but that integration is the host's, not Governor's. Multi-signal-aware, not mult
 
 ### 1. Frozen mandates (immutability)
 
-A node becomes **frozen the moment another node points a structural edge at it** — freeze is
+A node becomes **frozen the moment another node relies on it through a structural edge** — freeze is
 _derived_ from the graph, not a declared flag. (Rationale: a declared flag can lag behind the first
 inbound edge; a derived freeze cannot drift, and the lock point becomes a fact of the graph rather
 than a matter of discipline.)
 
-- **Total lock:** once frozen, both the prose body _and_ the frontmatter are immutable at HEAD.
+- **Direction ([ADR-0002](decisions/ADR-0002-freeze-direction.md)):** freeze protects the
+  **depended-upon** node — a parent whose children derive from it, a blocker something waits on, a
+  superseded historical record. The dependent (child, blocked item, superseder) is not frozen by the
+  relationship; it is the living workflow end.
+- **Meaning lock, not workflow lock:** once frozen, the prose body, plain fields, and structural
+  edges are immutable at HEAD. **`status` is exempt** — it is workflow state, and a frozen epic must
+  still be completable when its children are done (gate status was always machine-owned by the
+  runner; work/plan status behaves consistently with that).
 - **Window:** free edits until the freezing commit lands.
 - **Walk-back:** `git reset` is the only escape — and it is coherent precisely because it _rewrites
   history_, so the freeze and un-freeze are both accounted for. A reset re-opens the node **and its

@@ -5,6 +5,58 @@ All notable changes to Governor are recorded here. Versions follow
 
 ## Unreleased
 
+### Changed — freeze protects the depended-upon node; status is workflow-exempt (ADR-0002)
+
+A design correction (see [docs/decisions/ADR-0002](docs/decisions/ADR-0002-freeze-direction.md)),
+surfaced by dogfooding: the slice-2 freeze direction froze the **dependent** (a workitem created
+with `--parent` was frozen at birth), making `set`/`status`/`done` impossible on essentially every
+node of a real tree.
+
+- **Freeze direction flipped:** the freezing kinds are the reliance-declaring inbound edges —
+  `parent` (children derive from this node), `blocked_by` (something waits on it), `supersedes`
+  (superseded historical record). The dependent stays editable.
+- **`status` transitions are exempt from the freeze guard** — freeze locks _meaning_ (title, prose,
+  plain fields, edges); status is workflow state, still enum-validated. A frozen epic is completable
+  when its children are done.
+- **Counterparty exclusion:** removing edge `A —kind→ B` ignores freeze on `A` contributed by `B` —
+  a relationship's own reliance cannot block its dissolution. Bystander freeze still blocks.
+
+### Added — taxonomy seam: repo override + taxonomy-derived freeze/blast-radius
+
+Control 3's portability seam, now real end-to-end:
+
+- **`.governance/taxonomy.json`** — optional repo override merged onto the shipped defaults
+  (extend-only): node types, per-type status enums, edge kinds, id-prefix aliases. Loaded by the new
+  core `loadTaxonomy(root)`; the CLI resolves it once per invocation (`loadTree`) and every command
+  consumes it — repo-defined vocabulary applies uniformly to validation, symmetry, freeze, and blast
+  radius. A malformed override is an error, never a silent fallback.
+- **`EdgeKind` gains `freezes` and `toDependent`** — freeze and blast-radius direction are now
+  declared per edge kind in the taxonomy instead of two hard-coded kind lists, so repo-defined
+  structural kinds participate fully.
+- **Default vocabulary extended with the reference tree's gate bindings:** `produces_gate` ↔
+  `guarded_by` (structural, symmetric; `guarded_by` freezes the producing node, the gate itself
+  stays unfrozen so its human-owned `partial` bypass remains settable), plus `consumes_gate`,
+  `decisions`, `cited_by`, and `gates` as recognized weak one-way references (dangling targets are
+  now caught).
+
+### Fixed
+
+- **Unquoted YAML dates round-trip byte-stable.** The default YAML schema parsed
+  `created_at:
+  2026-05-22` into a Date object, which re-serialized as `2026-05-22T00:00:00.000Z` —
+  corrupting every node a write command touched. Parser and serializer now use the `core` schema;
+  plain dates stay plain strings. (Note: YAML _comments_ inside frontmatter are still dropped on
+  rewrite — the frontmatter is CLI-owned by design; keep commentary in the prose body.)
+
+### Dogfood
+
+- Governor now governs itself: a `.governance/` tree (project, masterplan, this slice's workitems)
+  with hooks installed via `governor init`. The seeded policy hooks were edited to run Governor from
+  source — exactly the repo-owned policy customization the Husky-shaped design intends.
+- The H3G reference tree was healed with `governor edge add` (13 symmetry reconciliations — the 12
+  known drifts plus a one-sided `produces_gate` binding the extended vocabulary surfaced) and
+  validates clean: 82 nodes, 0 errors.
+
 ### Added — porcelain workflow verbs (`next` / `work` / `done`)
 
 Task-shaped commands that compose the plumbing (à la git porcelain) for the pick → orient → finish

@@ -54,6 +54,11 @@ primitives.
 uniqueness) and graph-integrity checks (structural-edge symmetry, dangling edges) over the whole
 tree. `index` renders the INDEX projection — generated, never hand-maintained.
 
+Every command resolves the repo's **effective taxonomy**: the shipped defaults, optionally extended
+by a `.governance/taxonomy.json` override (node types, status enums, edge kinds with their
+`structural`/`freezes`/`toDependent` semantics, id-prefix aliases). Repo-defined vocabulary
+participates fully in validation, symmetry, freeze, and blast radius.
+
 The write commands enforce the governance controls: **frozen** nodes (those with an inbound
 structural edge) refuse edits — supersede them instead; a structural change on a node with
 **dependents** is blocked and routed to supersession; `set` handles plain scalars only (structural
