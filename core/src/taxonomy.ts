@@ -4,13 +4,16 @@
  * graph together.
  *
  * Governor ships a sensible default taxonomy ({@link DEFAULT_TAXONOMY}) but is
- * portable: a repo may supply an override map that merges/extends the defaults
- * (per the design of record, control 3). The merge helper here is the seam for
- * that — narrowing semantics (whether an override may remove a default state)
- * are deliberately deferred and the merge currently only extends.
+ * portable: a repo may supply an override map in `.governance/taxonomy.json`
+ * that merges/extends the defaults (per the design of record, control 3).
+ * {@link loadTaxonomy} reads and applies it; {@link mergeTaxonomy} is the pure
+ * merge seam — narrowing semantics (whether an override may remove a default
+ * state) are deliberately deferred and the merge currently only extends.
  *
  * @module
  */
+
+import { join } from "@std/path";
 
 /**
  * Definition of one structural edge kind. `reverse` names the edge written on
@@ -28,6 +31,19 @@ export interface EdgeKind {
    * enforced, blast radius is blocking). One-way weak edges are non-structural.
    */
   structural: boolean;
+  /**
+   * True when an inbound edge of this kind freezes its target — the
+   * reliance-declaring direction (control 1, ADR-0002). Declaring `parent`
+   * freezes the parent; `blocked_by` freezes the blocker; `supersedes` freezes
+   * the superseded record.
+   */
+  freezes: boolean;
+  /**
+   * True when this kind points from a node to one of its dependents — the
+   * direction the blast-radius traversal walks (control 4). `children`,
+   * `blocks`, and `supersedes` point downstream.
+   */
+  toDependent: boolean;
 }
 
 /** The full taxonomy: node types, per-type status enums, edges, and aliases. */
@@ -47,13 +63,94 @@ export interface Taxonomy {
 
 /** Edge kinds shipped by default. */
 const DEFAULT_EDGES: Record<string, EdgeKind> = {
-  parent: { name: "parent", reverse: "children", structural: true },
-  children: { name: "children", reverse: "parent", structural: true },
-  blocks: { name: "blocks", reverse: "blocked_by", structural: true },
-  blocked_by: { name: "blocked_by", reverse: "blocks", structural: true },
-  supersedes: { name: "supersedes", reverse: "superseded_by", structural: true },
-  superseded_by: { name: "superseded_by", reverse: "supersedes", structural: true },
-  cites: { name: "cites", reverse: null, structural: false },
+  parent: {
+    name: "parent",
+    reverse: "children",
+    structural: true,
+    freezes: true,
+    toDependent: false,
+  },
+  children: {
+    name: "children",
+    reverse: "parent",
+    structural: true,
+    freezes: false,
+    toDependent: true,
+  },
+  blocks: {
+    name: "blocks",
+    reverse: "blocked_by",
+    structural: true,
+    freezes: false,
+    toDependent: true,
+  },
+  blocked_by: {
+    name: "blocked_by",
+    reverse: "blocks",
+    structural: true,
+    freezes: true,
+    toDependent: false,
+  },
+  // `supersedes` both freezes its target (the superseded historical record) and
+  // points downstream (the superseded node is reachable from its superseder).
+  supersedes: {
+    name: "supersedes",
+    reverse: "superseded_by",
+    structural: true,
+    freezes: true,
+    toDependent: true,
+  },
+  superseded_by: {
+    name: "superseded_by",
+    reverse: "supersedes",
+    structural: true,
+    freezes: false,
+    toDependent: false,
+  },
+  // The gate-binding pair: an epic/workitem produces its proof-of-done gate;
+  // the gate is guarded_by the node it proves. The gate's meaning derives from
+  // its producer (so `guarded_by` freezes the producer, like `parent`), but the
+  // gate itself stays unfrozen — its status is machine-owned by the runner and
+  // its `partial` bypass must remain human-settable.
+  produces_gate: {
+    name: "produces_gate",
+    reverse: "guarded_by",
+    structural: true,
+    freezes: false,
+    toDependent: true,
+  },
+  guarded_by: {
+    name: "guarded_by",
+    reverse: "produces_gate",
+    structural: true,
+    freezes: true,
+    toDependent: false,
+  },
+  // Weak one-way references: recognized so dangling targets are caught, but no
+  // reverse is required and they carry no freeze/blast-radius semantics.
+  consumes_gate: {
+    name: "consumes_gate",
+    reverse: null,
+    structural: false,
+    freezes: false,
+    toDependent: false,
+  },
+  decisions: {
+    name: "decisions",
+    reverse: null,
+    structural: false,
+    freezes: false,
+    toDependent: false,
+  },
+  cited_by: {
+    name: "cited_by",
+    reverse: null,
+    structural: false,
+    freezes: false,
+    toDependent: false,
+  },
+  gates: { name: "gates", reverse: null, structural: false, freezes: false, toDependent: false },
+  cites: { name: "cites", reverse: null, structural: false, freezes: false, toDependent: false },
 };
 
 /**
@@ -116,6 +213,76 @@ export function mergeTaxonomy(base: Taxonomy, override: Partial<Taxonomy>): Taxo
     edges: { ...base.edges, ...(override.edges ?? {}) },
     idPrefixAliases: { ...base.idPrefixAliases, ...(override.idPrefixAliases ?? {}) },
   };
+}
+
+/** The repo taxonomy-override file, relative to the `.governance/` root. */
+export const TAXONOMY_FILE = "taxonomy.json";
+
+/**
+ * Load the effective taxonomy for a `.governance/` root: the shipped
+ * {@link DEFAULT_TAXONOMY}, extended by the repo's optional
+ * `taxonomy.json` override (control 3's portability seam). Edge entries in the
+ * override may be partial — `name` is taken from the key and omitted flags
+ * default off. A missing file yields the defaults; a malformed file is an
+ * error (the override is authority-bearing, so silent fallback would hide a
+ * misconfiguration).
+ */
+export async function loadTaxonomy(root: string): Promise<Taxonomy> {
+  const path = join(root, TAXONOMY_FILE);
+  let raw: string;
+  try {
+    raw = await Deno.readTextFile(path);
+  } catch (err) {
+    if (err instanceof Deno.errors.NotFound) return DEFAULT_TAXONOMY;
+    throw err;
+  }
+
+  return parseTaxonomyOverride(raw);
+}
+
+/**
+ * Parse a raw `taxonomy.json` override source and merge it onto the defaults.
+ * The pure counterpart of {@link loadTaxonomy} — used by callers that read the
+ * override from somewhere other than the filesystem (e.g. the staged index).
+ */
+export function parseTaxonomyOverride(raw: string): Taxonomy {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (err) {
+    throw new Error(`${TAXONOMY_FILE}: not valid JSON — ${(err as Error).message}`);
+  }
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    throw new Error(`${TAXONOMY_FILE}: expected a JSON object of taxonomy overrides`);
+  }
+
+  return mergeTaxonomy(DEFAULT_TAXONOMY, normalizeOverride(parsed as Record<string, unknown>));
+}
+
+/** Normalize a parsed override: fill partial edge entries with defaults. */
+function normalizeOverride(parsed: Record<string, unknown>): Partial<Taxonomy> {
+  const override: Partial<Taxonomy> = {
+    nodeTypes: parsed.nodeTypes as string[] | undefined,
+    statusByType: parsed.statusByType as Record<string, string[]> | undefined,
+    idPrefixAliases: parsed.idPrefixAliases as Record<string, string> | undefined,
+  };
+
+  if (typeof parsed.edges === "object" && parsed.edges !== null) {
+    const edges: Record<string, EdgeKind> = {};
+    for (const [name, value] of Object.entries(parsed.edges as Record<string, unknown>)) {
+      const entry = (typeof value === "object" && value !== null ? value : {}) as Partial<EdgeKind>;
+      edges[name] = {
+        name,
+        reverse: entry.reverse ?? null,
+        structural: entry.structural ?? false,
+        freezes: entry.freezes ?? false,
+        toDependent: entry.toDependent ?? false,
+      };
+    }
+    override.edges = edges;
+  }
+
+  return override;
 }
 
 /** Union the status arrays of two per-type status maps. */

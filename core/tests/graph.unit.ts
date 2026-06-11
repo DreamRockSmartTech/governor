@@ -1,5 +1,5 @@
 import { assert, assertEquals } from "@std/assert";
-import { DEFAULT_TAXONOMY } from "../src/taxonomy.ts";
+import { DEFAULT_TAXONOMY, mergeTaxonomy } from "../src/taxonomy.ts";
 import { blastRadius, buildGraph } from "../src/graph.ts";
 import type { GovNode } from "../src/types.ts";
 
@@ -58,7 +58,7 @@ Deno.test("buildGraph materializes declared edges and derives missing reverses",
 Deno.test("blastRadius (structural) follows structural edges downstream transitively", () => {
   const g = buildGraph(fixture(), DEFAULT_TAXONOMY);
 
-  const downstream = blastRadius(g, "masterplan-01-x", "structural").sort();
+  const downstream = blastRadius(g, "masterplan-01-x", "structural", DEFAULT_TAXONOMY).sort();
 
   // From the masterplan, structural reach: epicA (child), epicB (epicA blocks),
   // workitemX (epicA child).
@@ -68,7 +68,36 @@ Deno.test("blastRadius (structural) follows structural edges downstream transiti
 Deno.test("blastRadius excludes the origin node itself", () => {
   const g = buildGraph(fixture(), DEFAULT_TAXONOMY);
 
-  const downstream = blastRadius(g, "epic-02-b", "structural");
+  const downstream = blastRadius(g, "epic-02-b", "structural", DEFAULT_TAXONOMY);
 
   assertEquals(downstream.includes("epic-02-b"), false);
+});
+
+Deno.test("blastRadius walks a repo-defined dependent edge kind from the taxonomy", () => {
+  // A repo override adds requires/required_by: A requires B means A relies on
+  // B, so A is in B's blast radius via the derived required_by reverse.
+  const taxonomy = mergeTaxonomy(DEFAULT_TAXONOMY, {
+    edges: {
+      requires: {
+        name: "requires",
+        reverse: "required_by",
+        structural: true,
+        freezes: true,
+        toDependent: false,
+      },
+      required_by: {
+        name: "required_by",
+        reverse: "requires",
+        structural: true,
+        freezes: false,
+        toDependent: true,
+      },
+    },
+  });
+  const g = buildGraph([
+    node("epic-01-a", "epic", { requires: ["epic-02-b"] }),
+    node("epic-02-b", "epic"),
+  ], taxonomy);
+
+  assertEquals(blastRadius(g, "epic-02-b", "structural", taxonomy), ["epic-01-a"]);
 });

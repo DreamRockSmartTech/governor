@@ -7,28 +7,13 @@
  */
 
 import {
-  buildGraph,
-  DEFAULT_TAXONOMY,
+  asList,
+  DONE_STATUSES,
   type GovNode,
   type Graph,
-  loadGovernance,
+  statusOf,
 } from "@dreamrock/governor-core";
-
-/** Statuses that count as "done" — a blocker in one of these no longer blocks. */
-const DONE_STATUSES = new Set(["complete", "closed", "cleared"]);
-
-/** Read a node's status string (or "" when absent). */
-function statusOf(node: GovNode | undefined): string {
-  const s = node?.frontmatter.status;
-  return typeof s === "string" ? s : "";
-}
-
-/** Normalize a frontmatter edge value to a string list. */
-function asList(value: unknown): string[] {
-  if (typeof value === "string") return [value];
-  if (Array.isArray(value)) return value.filter((v): v is string => typeof v === "string");
-  return [];
-}
+import { loadTree } from "../write.ts";
 
 /**
  * Open WorkItems that are unblocked: every `blocked_by` target resolves to a
@@ -52,7 +37,7 @@ export interface NextOptions {
 
 /** Run the next command. Returns the exit code (always 0). */
 export async function runNext(opts: NextOptions): Promise<number> {
-  const graph = buildGraph(await loadGovernance(opts.root), DEFAULT_TAXONOMY);
+  const { graph } = await loadTree(opts.root);
   const ready = unblockedOpenWorkItems(graph);
 
   if (ready.length === 0) {

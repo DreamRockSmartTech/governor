@@ -6,3 +6,6 @@ deno.lock
 .DS_Store
 *.swp
 .idea/
+
+# Session artifacts
+tests/REPORT.md

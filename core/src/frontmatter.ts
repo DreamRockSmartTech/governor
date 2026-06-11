@@ -38,7 +38,10 @@ export function splitFrontmatter(source: string): ParsedDocument {
   }
 
   const yamlText = match[1];
-  const parsed = parseYaml(yamlText);
+  // The `core` schema keeps unquoted dates (`2026-05-22`) as plain strings.
+  // The default schema would coerce them to Date objects, which re-serialize
+  // as ISO timestamps and corrupt every node a write command touches.
+  const parsed = parseYaml(yamlText, { schema: "core" });
   const frontmatter = isMapping(parsed) ? parsed : {};
   const body = source.slice(match[0].length);
   return { frontmatter, body };

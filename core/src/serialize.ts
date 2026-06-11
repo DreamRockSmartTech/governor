@@ -19,7 +19,10 @@ import { stringify as stringifyYaml } from "@std/yaml";
  */
 export function serializeNode(frontmatter: Record<string, unknown>, body: string): string {
   const ordered = orderForWrite(frontmatter);
-  const yaml = stringifyYaml(ordered, { lineWidth: -1 }).trimEnd();
+  // The `core` schema mirrors the parser's: date-like strings (`2026-05-22`)
+  // are emitted unquoted, byte-stable with the hand-authored form, instead of
+  // being defensively quoted against a timestamp type Governor does not use.
+  const yaml = stringifyYaml(ordered, { lineWidth: -1, schema: "core" }).trimEnd();
   return `---\n${yaml}\n---\n${body}`;
 }
 

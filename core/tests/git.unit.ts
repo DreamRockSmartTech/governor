@@ -1,8 +1,11 @@
 import { assert, assertEquals } from "@std/assert";
 import {
+  lsStaged,
+  lsTree,
   readGitConfig,
   readGitConfigAll,
   setGitConfig,
+  showFile,
   stagedChurn,
   stagedFiles,
 } from "../src/git.ts";
@@ -63,4 +66,47 @@ Deno.test("stagedChurn sums added+deleted lines across staged files", async () =
   const churn = await stagedChurn(repo);
 
   assertEquals(churn, 3); // three added lines
+});
+
+async function commitAll(repo: string, msg: string): Promise<void> {
+  await run(repo, ["add", "-A"]);
+  await run(repo, [
+    "-c",
+    "user.name=T",
+    "-c",
+    "user.email=t@example.com",
+    "-c",
+    "commit.gpgsign=false",
+    "commit",
+    "-q",
+    "-m",
+    msg,
+  ]);
+}
+
+Deno.test("lsTree lists committed files under a prefix; lsStaged lists the index", async () => {
+  const repo = await tempRepo();
+  await Deno.mkdir(`${repo}/.governance`, { recursive: true });
+  await Deno.writeTextFile(`${repo}/.governance/a.md`, "a");
+  await Deno.writeTextFile(`${repo}/other.txt`, "x");
+  await commitAll(repo, "init");
+  await Deno.writeTextFile(`${repo}/.governance/b.md`, "b");
+  await run(repo, ["add", ".governance/b.md"]);
+
+  assertEquals(await lsTree(repo, "HEAD", ".governance"), [".governance/a.md"]);
+  assertEquals(await lsStaged(repo, ".governance"), [".governance/a.md", ".governance/b.md"]);
+});
+
+Deno.test("showFile reads a blob from HEAD and from the index, null when absent", async () => {
+  const repo = await tempRepo();
+  await Deno.mkdir(`${repo}/.governance`, { recursive: true });
+  await Deno.writeTextFile(`${repo}/.governance/a.md`, "committed");
+  await commitAll(repo, "init");
+  await Deno.writeTextFile(`${repo}/.governance/a.md`, "staged");
+  await run(repo, ["add", ".governance/a.md"]);
+  await Deno.writeTextFile(`${repo}/.governance/a.md`, "working-only");
+
+  assertEquals(await showFile(repo, "HEAD:.governance/a.md"), "committed");
+  assertEquals(await showFile(repo, ":.governance/a.md"), "staged");
+  assertEquals(await showFile(repo, "HEAD:.governance/ghost.md"), null);
 });

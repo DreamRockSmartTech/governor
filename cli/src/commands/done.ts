@@ -10,14 +10,8 @@
  */
 
 import { dirname } from "@std/path";
-import {
-  DEFAULT_TAXONOMY,
-  type GovNode,
-  MutationError,
-  runGate,
-  transitionStatus,
-} from "@dreamrock/governor-core";
-import { loadGraph, regenIndex, writeNode } from "../write.ts";
+import { type GovNode, MutationError, runGate, transitionStatus } from "@dreamrock/governor-core";
+import { loadTree, regenIndex, writeNode } from "../write.ts";
 
 /** The produced-gate id a node declares, or null. Pure. */
 export function gateIdFor(node: GovNode): string | null {
@@ -41,7 +35,7 @@ export interface DoneOptions {
 
 /** Run the done command. Returns the exit code (1 if a gate fails). */
 export async function runDone(opts: DoneOptions): Promise<number> {
-  const graph = await loadGraph(opts.root);
+  const { graph, taxonomy } = await loadTree(opts.root);
   const node = graph.byId.get(opts.id);
   if (!node) {
     console.error(`done: no node with id "${opts.id}"`);
@@ -71,7 +65,7 @@ export async function runDone(opts: DoneOptions): Promise<number> {
   }
 
   try {
-    const completed = transitionStatus(graph, opts.id, "complete", DEFAULT_TAXONOMY);
+    const completed = transitionStatus(graph, opts.id, "complete", taxonomy);
     await writeNode(opts.root, completed);
     await regenIndex(opts.root);
     console.log(`Completed ${opts.id}`);

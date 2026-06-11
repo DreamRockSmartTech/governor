@@ -9,21 +9,34 @@
  * @module
  */
 
-import { join } from "@std/path";
+import { dirname, join } from "@std/path";
 import {
   buildGraph,
-  DEFAULT_TAXONOMY,
   type GovNode,
   type Graph,
   loadGovernance,
+  loadTaxonomy,
   renderIndex,
   serializeNode,
+  type Taxonomy,
 } from "@dreamrock/governor-core";
 
-/** Load a `.governance/` root into a built graph. */
-export async function loadGraph(root: string): Promise<Graph> {
+/** A loaded tree: the built graph plus the effective taxonomy it was built with. */
+export interface Tree {
+  graph: Graph;
+  taxonomy: Taxonomy;
+}
+
+/**
+ * Load a `.governance/` root into a built graph, under the repo's effective
+ * taxonomy (shipped defaults + the optional `taxonomy.json` override). This is
+ * the single resolve point — every command consumes the taxonomy from here so
+ * repo-defined vocabulary applies uniformly.
+ */
+export async function loadTree(root: string): Promise<Tree> {
+  const taxonomy = await loadTaxonomy(root);
   const nodes = await loadGovernance(root);
-  return buildGraph(nodes, DEFAULT_TAXONOMY);
+  return { graph: buildGraph(nodes, taxonomy), taxonomy };
 }
 
 /**
@@ -33,15 +46,15 @@ export async function loadGraph(root: string): Promise<Graph> {
  */
 export async function writeNode(root: string, node: GovNode): Promise<string> {
   const target = node.path && node.path.length > 0 ? node.path : defaultPath(root, node);
-  await Deno.mkdir(dirOf(target), { recursive: true });
+  await Deno.mkdir(dirname(target), { recursive: true });
   await Deno.writeTextFile(target, serializeNode(node.frontmatter, node.body));
   return target;
 }
 
 /** Regenerate `<root>/INDEX.md` from the current on-disk tree. */
 export async function regenIndex(root: string): Promise<void> {
-  const graph = await loadGraph(root);
-  const markdown = renderIndex(graph, DEFAULT_TAXONOMY);
+  const { graph, taxonomy } = await loadTree(root);
+  const markdown = renderIndex(graph, taxonomy);
   await Deno.writeTextFile(
     join(root, "INDEX.md"),
     markdown.endsWith("\n") ? markdown : markdown + "\n",
@@ -51,9 +64,4 @@ export async function regenIndex(root: string): Promise<void> {
 /** The conventional file path for a new node: `<root>/<nodeType>s/<id>.md`. */
 function defaultPath(root: string, node: GovNode): string {
   return join(root, `${node.nodeType}s`, `${node.id}.md`);
-}
-
-/** The directory portion of a file path. */
-function dirOf(path: string): string {
-  return path.slice(0, path.lastIndexOf("/"));
 }

@@ -84,18 +84,31 @@ Deno.test("setField rejects the status field with a pointer to status", () => {
   );
 });
 
-Deno.test("setField refuses a frozen node", () => {
+Deno.test("setField refuses a frozen (depended-upon) node", () => {
   const nodes = [
     node("masterplan-01-x", "masterplan", { children: ["epic-01-a"] }),
     node("epic-01-a", "epic", { parent: "masterplan-01-x" }),
   ];
   const graph = buildGraph(nodes, DEFAULT_TAXONOMY);
 
+  // The masterplan is frozen — its child derives from it (ADR-0002).
   const err = assertThrows(
-    () => setField(graph, "epic-01-a", "owner", "justin", DEFAULT_TAXONOMY),
+    () => setField(graph, "masterplan-01-x", "owner", "justin", DEFAULT_TAXONOMY),
     MutationError,
   );
   assert(err.message.includes("frozen") || err.message.includes("supersede"));
+});
+
+Deno.test("setField allows editing a dependent node (child is workflow, not mandate)", () => {
+  const nodes = [
+    node("masterplan-01-x", "masterplan", { children: ["epic-01-a"] }),
+    node("epic-01-a", "epic", { parent: "masterplan-01-x" }),
+  ];
+  const graph = buildGraph(nodes, DEFAULT_TAXONOMY);
+
+  const updated = setField(graph, "epic-01-a", "priority", "high", DEFAULT_TAXONOMY);
+
+  assertEquals(updated.frontmatter.priority, "high");
 });
 
 Deno.test("addEdge wires both sides", () => {
@@ -112,9 +125,10 @@ Deno.test("addEdge wires both sides", () => {
 
 Deno.test("addEdge reconciling the reverse of an existing edge is exempt from freeze and dependents", () => {
   // epic-02-b declares `blocked_by: epic-01-a`, but epic-01-a is missing the
-  // reverse `blocks: epic-02-b`. epic-01-a is frozen (child of a masterplan)
-  // AND has a dependent (workitem child). Backfilling the reverse is pure
-  // bookkeeping — exempt from BOTH the freeze and dependents guards.
+  // reverse `blocks: epic-02-b`. epic-01-a is frozen (its workitem child
+  // relies on it) AND has a dependent (the same child). Backfilling the
+  // reverse is pure bookkeeping — exempt from BOTH the freeze and dependents
+  // guards.
   const nodes = [
     node("masterplan-01-x", "masterplan", { children: ["epic-01-a"] }),
     node("epic-01-a", "epic", { parent: "masterplan-01-x", children: ["workitem-01-x"] }),
@@ -130,17 +144,23 @@ Deno.test("addEdge reconciling the reverse of an existing edge is exempt from fr
 });
 
 Deno.test("addEdge of a genuinely new edge on a frozen node is still blocked", () => {
-  // epic-01-a is frozen; epic-02-b has NO existing counterpart edge → new
-  // relationship → freeze blocks it (supersede instead).
+  // decision-01-old is frozen purely as a superseded historical record (no
+  // dependents) — a genuinely new outbound edge on it must be refused.
   const nodes = [
-    node("masterplan-01-x", "masterplan", { children: ["epic-01-a"] }),
-    node("epic-01-a", "epic", { parent: "masterplan-01-x" }),
+    node("decision-02-new", "decision", {
+      status: "accepted",
+      supersedes: ["decision-01-old"],
+    }),
+    node("decision-01-old", "decision", {
+      status: "superseded",
+      superseded_by: ["decision-02-new"],
+    }),
     node("epic-02-b", "epic"),
   ];
   const graph = buildGraph(nodes, DEFAULT_TAXONOMY);
 
   const err = assertThrows(
-    () => addEdge(graph, "epic-01-a", "blocks", "epic-02-b", DEFAULT_TAXONOMY),
+    () => addEdge(graph, "decision-01-old", "blocks", "epic-02-b", DEFAULT_TAXONOMY),
     MutationError,
   );
   assert(err.message.includes("frozen") || err.message.includes("supersede"));
@@ -163,6 +183,10 @@ Deno.test("addEdge blocks a structural change when the source has dependents", (
 });
 
 Deno.test("removeEdge clears both sides", () => {
+  // epic-01-a is frozen ONLY by epic-02-b's reliance on it — the very
+  // relationship being dissolved. The counterparty's freeze must not block
+  // dissolving the relationship itself (same principle as the dependents
+  // guard's `to` exclusion).
   const nodes = [
     node("epic-01-a", "epic", { blocks: ["epic-02-b"] }),
     node("epic-02-b", "epic", { blocked_by: ["epic-01-a"] }),
@@ -177,6 +201,27 @@ Deno.test("removeEdge clears both sides", () => {
   assertEquals(b.frontmatter.blocked_by ?? [], []);
 });
 
+Deno.test("removeEdge is still blocked when a third party freezes the source", () => {
+  // epic-01-a blocks epic-02-b, but is ALSO superseded by another node —
+  // frozen by a bystander, so even dissolving the a↔b relationship is refused.
+  const nodes = [
+    node("epic-01-a", "epic", {
+      status: "superseded",
+      blocks: ["epic-02-b"],
+      superseded_by: ["epic-03-c"],
+    }),
+    node("epic-02-b", "epic", { blocked_by: ["epic-01-a"] }),
+    node("epic-03-c", "epic", { supersedes: ["epic-01-a"] }),
+  ];
+  const graph = buildGraph(nodes, DEFAULT_TAXONOMY);
+
+  const err = assertThrows(
+    () => removeEdge(graph, "epic-01-a", "blocks", "epic-02-b", DEFAULT_TAXONOMY),
+    MutationError,
+  );
+  assert(err.message.includes("frozen") || err.message.includes("supersede"));
+});
+
 Deno.test("transitionStatus enforces the type's enum", () => {
   const graph = buildGraph([node("epic-01-a", "epic")], DEFAULT_TAXONOMY);
 
@@ -187,6 +232,20 @@ Deno.test("transitionStatus enforces the type's enum", () => {
     () => transitionStatus(graph, "epic-01-a", "banana", DEFAULT_TAXONOMY),
     MutationError,
   );
+});
+
+Deno.test("transitionStatus is allowed on a frozen node — status is workflow, not mandate", () => {
+  // An epic with children is frozen (depended upon), but completing it is a
+  // workflow transition, not a meaning edit — it must not be freeze-guarded.
+  const nodes = [
+    node("epic-01-a", "epic", { children: ["workitem-01-x"] }),
+    node("workitem-01-x", "workitem", { parent: "epic-01-a" }),
+  ];
+  const graph = buildGraph(nodes, DEFAULT_TAXONOMY);
+
+  const updated = transitionStatus(graph, "epic-01-a", "complete", DEFAULT_TAXONOMY);
+
+  assertEquals(updated.frontmatter.status, "complete");
 });
 
 Deno.test("transitionStatus refuses gate nodes (machine-owned by the runner)", () => {

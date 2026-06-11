@@ -3,7 +3,116 @@
 All notable changes to Governor are recorded here. Versions follow
 [Semantic Versioning 2.0.0](https://semver.org/).
 
-## Unreleased
+## 0.1.0 — 2026-06-11
+
+The first real release: the six controls, the plumbing + porcelain command layers, git-hook
+enforcement (including the staged-snapshot out-of-band boundary), the repo taxonomy seam, and the
+agent skill — dogfooded on this repository and on the H3G reference tree. Pre-1.0 per SemVer: the
+public API may change between minor versions. POSIX platforms only.
+
+### Added — Phase D hardening + release engineering
+
+- **CLI integration suite** (`cli/tests/cli.e2e.ts`): drives the command runners against real temp
+  git repositories — `init` mandate/idempotency/no-clobber, the `new`→`set`→`done` lifecycle with
+  counters and freeze, the gate runner (bidirectional status), `done` refusing on a failing gate,
+  `check --staged` boundary behavior, `review-check` binding/blocking, and the installed hooks
+  end-to-end through actual `git commit` (including the `GOVERNOR=0` bypass).
+- **CI** (`.github/workflows/ci.yml`): fmt/lint/type-check/tests + `governor check` on this repo's
+  own governance tree + a JSR publish dry-run, on every push/PR. **Publish workflow**
+  (`.github/workflows/publish.yml`): publishes all packages to JSR via GitHub OIDC on a `v*` tag.
+- `gate run` surfaces the human-owned `partial` bypass on a failed gate (control 2's escape hatch is
+  now visible to the operator, not just to readers of the frontmatter).
+- `governor edge` rejects an unknown op instead of silently treating it as `add`; shared
+  `asList`/`statusOf`/`DONE_STATUSES` helpers replace five private copies; published packages
+  exclude their test directories.
+
+### Added — `governor check --staged`: out-of-band enforcement (controls 1 & 5)
+
+The pre-commit teeth the design promised. `check --staged` materializes the **staged snapshot** and
+HEAD from git blobs (the working tree plays no part), runs the full validator over the staged tree,
+and judges the delta with boundary rules that mirror the CLI's own legality — anything the CLI could
+have produced passes, anything it would have refused blocks:
+
+- Edits to a **frozen** node — body, plain fields, deletion — block (`frozen-body-edit`,
+  `frozen-node-edited`, `frozen-node-deleted`); `status` stays workflow-exempt (ADR-0002).
+- **Symmetric hand-made structural changes** — both sides edited consistently, invisible to a
+  snapshot-only check — block (`out-of-band-structural`) unless at least one direction of
+  `governor edge add|rm` could have performed them (freeze + dependents judged at HEAD, counterparty
+  excluded). Reconciliation backfills and new-node wiring are always recognized as legal.
+- A `criteria_check` change on a gate that is frozen or has dependents blocks.
+
+Core: `stagedBoundary` (pure; graphs in, findings out), `nodeFromSource`, `parseTaxonomyOverride`,
+git plumbing `lsTree`/`lsStaged`/`showFile`. The seeded default `pre-commit` policy hook now runs
+`governor check --staged`.
+
+### Added — legacy `criteria_check` warning
+
+`validate` warns (`legacy-criteria-check`, never blocks) when a gate's `criteria_check` is not the
+structured `{runnable, …}` block — migrating hand-authored trees see that `gate run` would fail
+closed instead of being surprised by it.
+
+### Added — `@dreamrock/governor-skill`: the agent skill package
+
+The cooperative layer of control 6's defense-in-depth, as an installable package. `SKILL.md` teaches
+a coding agent the governed workflow: a grill-me-style adversarial design interview to synchronize
+with the user before coding (one question at a time, dependencies are the prize, checkpoint
+summaries, and a hard gate — no code until the user confirms the workitem decomposition); when and
+how to create nodes through the CLI; the free-edit prose sections used for review and tracking
+(`## Description` / `## Evidence` / `## Approach` / `## Session log`); and how to respond when the
+hooks push back. Install: `deno run -A jsr:@dreamrock/governor-skill/install` (default dest
+`.claude/skills/governor/`, idempotent, upgrades stale copies).
+
+### Changed — freeze protects the depended-upon node; status is workflow-exempt (ADR-0002)
+
+A design correction (see [docs/decisions/ADR-0002](docs/decisions/ADR-0002-freeze-direction.md)),
+surfaced by dogfooding: the slice-2 freeze direction froze the **dependent** (a workitem created
+with `--parent` was frozen at birth), making `set`/`status`/`done` impossible on essentially every
+node of a real tree.
+
+- **Freeze direction flipped:** the freezing kinds are the reliance-declaring inbound edges —
+  `parent` (children derive from this node), `blocked_by` (something waits on it), `supersedes`
+  (superseded historical record). The dependent stays editable.
+- **`status` transitions are exempt from the freeze guard** — freeze locks _meaning_ (title, prose,
+  plain fields, edges); status is workflow state, still enum-validated. A frozen epic is completable
+  when its children are done.
+- **Counterparty exclusion:** removing edge `A —kind→ B` ignores freeze on `A` contributed by `B` —
+  a relationship's own reliance cannot block its dissolution. Bystander freeze still blocks.
+
+### Added — taxonomy seam: repo override + taxonomy-derived freeze/blast-radius
+
+Control 3's portability seam, now real end-to-end:
+
+- **`.governance/taxonomy.json`** — optional repo override merged onto the shipped defaults
+  (extend-only): node types, per-type status enums, edge kinds, id-prefix aliases. Loaded by the new
+  core `loadTaxonomy(root)`; the CLI resolves it once per invocation (`loadTree`) and every command
+  consumes it — repo-defined vocabulary applies uniformly to validation, symmetry, freeze, and blast
+  radius. A malformed override is an error, never a silent fallback.
+- **`EdgeKind` gains `freezes` and `toDependent`** — freeze and blast-radius direction are now
+  declared per edge kind in the taxonomy instead of two hard-coded kind lists, so repo-defined
+  structural kinds participate fully.
+- **Default vocabulary extended with the reference tree's gate bindings:** `produces_gate` ↔
+  `guarded_by` (structural, symmetric; `guarded_by` freezes the producing node, the gate itself
+  stays unfrozen so its human-owned `partial` bypass remains settable), plus `consumes_gate`,
+  `decisions`, `cited_by`, and `gates` as recognized weak one-way references (dangling targets are
+  now caught).
+
+### Fixed
+
+- **Unquoted YAML dates round-trip byte-stable.** The default YAML schema parsed
+  `created_at:
+  2026-05-22` into a Date object, which re-serialized as `2026-05-22T00:00:00.000Z` —
+  corrupting every node a write command touched. Parser and serializer now use the `core` schema;
+  plain dates stay plain strings. (Note: YAML _comments_ inside frontmatter are still dropped on
+  rewrite — the frontmatter is CLI-owned by design; keep commentary in the prose body.)
+
+### Dogfood
+
+- Governor now governs itself: a `.governance/` tree (project, masterplan, this slice's workitems)
+  with hooks installed via `governor init`. The seeded policy hooks were edited to run Governor from
+  source — exactly the repo-owned policy customization the Husky-shaped design intends.
+- The H3G reference tree was healed with `governor edge add` (13 symmetry reconciliations — the 12
+  known drifts plus a one-sided `produces_gate` binding the extended vocabulary surfaced) and
+  validates clean: 82 nodes, 0 errors.
 
 ### Added — porcelain workflow verbs (`next` / `work` / `done`)
 

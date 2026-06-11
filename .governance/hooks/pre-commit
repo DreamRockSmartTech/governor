@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+# Governor pre-commit — reject the commit when the STAGED governance snapshot
+# is invalid or contains an out-of-band change vs HEAD (frozen-node edits,
+# hand-made structural changes the CLI would have refused).
+# This repo runs Governor from source (no installed binary).
+deno run -A cli/mod.ts check --staged

@@ -10,16 +10,16 @@
  */
 
 import {
+  asList,
   blastRadius,
-  buildGraph,
   DEFAULT_TAXONOMY,
+  DONE_STATUSES,
   freezeState,
-  type GovNode,
   type Graph,
-  loadGovernance,
+  statusOf,
+  type Taxonomy,
 } from "@dreamrock/governor-core";
-
-const DONE_STATUSES = new Set(["complete", "closed", "cleared"]);
+import { loadTree } from "../write.ts";
 
 /** The done-state of a single blocker. */
 export interface BlockerState {
@@ -40,19 +40,12 @@ export interface NodeContext {
   gate: { id: string; status: string } | null;
 }
 
-function statusOf(node: GovNode | undefined): string {
-  const s = node?.frontmatter.status;
-  return typeof s === "string" ? s : "";
-}
-
-function asList(value: unknown): string[] {
-  if (typeof value === "string") return [value];
-  if (Array.isArray(value)) return value.filter((v): v is string => typeof v === "string");
-  return [];
-}
-
 /** Compute the orientation view for `id`, or `null` if it does not exist. Pure. */
-export function nodeContext(graph: Graph, id: string): NodeContext | null {
+export function nodeContext(
+  graph: Graph,
+  id: string,
+  taxonomy: Taxonomy = DEFAULT_TAXONOMY,
+): NodeContext | null {
   const node = graph.byId.get(id);
   if (!node) return null;
 
@@ -70,9 +63,9 @@ export function nodeContext(graph: Graph, id: string): NodeContext | null {
     id: node.id,
     title: typeof node.frontmatter.title === "string" ? node.frontmatter.title : node.id,
     status: statusOf(node),
-    frozen: freezeState(graph, id, DEFAULT_TAXONOMY).frozen,
+    frozen: freezeState(graph, id, taxonomy).frozen,
     blockedBy,
-    downstream: blastRadius(graph, id, "structural"),
+    downstream: blastRadius(graph, id, "structural", taxonomy),
     gate,
   };
 }
@@ -85,8 +78,8 @@ export interface WorkOptions {
 
 /** Run the work command. Returns the exit code. */
 export async function runWork(opts: WorkOptions): Promise<number> {
-  const graph = buildGraph(await loadGovernance(opts.root), DEFAULT_TAXONOMY);
-  const ctx = nodeContext(graph, opts.id);
+  const { graph, taxonomy } = await loadTree(opts.root);
+  const ctx = nodeContext(graph, opts.id, taxonomy);
   if (!ctx) {
     console.error(`work: no node with id "${opts.id}"`);
     return 1;

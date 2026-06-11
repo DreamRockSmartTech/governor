@@ -58,3 +58,13 @@ Deno.test("splitFrontmatter preserves a body that itself contains '---' rules", 
     "Intro paragraph.\n\n---\n\nAfter the horizontal rule.\n",
   );
 });
+
+Deno.test("splitFrontmatter keeps unquoted dates as plain strings (no Date mangling)", () => {
+  const doc = `---
+id: epic-01-a
+created_at: 2026-05-22
+---
+Body.`;
+  const { frontmatter } = splitFrontmatter(doc);
+  assertEquals(frontmatter?.created_at, "2026-05-22");
+});

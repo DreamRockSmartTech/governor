@@ -25,7 +25,7 @@ export async function loadGovernance(root: string): Promise<GovNode[]> {
 
   for await (const entry of walk(root, { exts: [".md"], includeDirs: false })) {
     const source = await Deno.readTextFile(entry.path);
-    const node = toNode(source, entry.path);
+    const node = nodeFromSource(source, entry.path);
     if (node) nodes.push(node);
   }
 
@@ -33,10 +33,13 @@ export async function loadGovernance(root: string): Promise<GovNode[]> {
 }
 
 /**
- * Convert a parsed markdown source into a {@link GovNode}, or `null` when the
- * file is not a node (missing or non-string `id`/`node_type`).
+ * Convert a markdown source into a {@link GovNode}, or `null` when the
+ * document is not a node (missing or non-string `id`/`node_type`). The
+ * single-file counterpart of {@link loadGovernance} — used by callers that
+ * materialize tree snapshots from somewhere other than the filesystem (e.g.
+ * git blobs for the staged check).
  */
-function toNode(source: string, path: string): GovNode | null {
+export function nodeFromSource(source: string, path: string): GovNode | null {
   const { frontmatter, body } = splitFrontmatter(source);
   if (!frontmatter) return null;
 

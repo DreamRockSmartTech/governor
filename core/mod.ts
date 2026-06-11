@@ -16,11 +16,13 @@
  */
 
 export { splitFrontmatter } from "./src/frontmatter.ts";
+export { asList, DONE_STATUSES, statusOf } from "./src/fields.ts";
 export type { ParsedDocument } from "./src/frontmatter.ts";
 export { serializeNode } from "./src/serialize.ts";
-export { loadGovernance } from "./src/loader.ts";
+export { loadGovernance, nodeFromSource } from "./src/loader.ts";
 export { blastRadius, buildGraph } from "./src/graph.ts";
 export { validate } from "./src/validate.ts";
+export { stagedBoundary } from "./src/staged-check.ts";
 export { renderIndex } from "./src/index-view.ts";
 export { freezeState, guardMutation, isFrozen } from "./src/freeze.ts";
 export type { FreezeState } from "./src/freeze.ts";
@@ -38,9 +40,12 @@ export type { CreateResult, NewNodeSpec } from "./src/mutate.ts";
 export { runGate } from "./src/gate-runner.ts";
 export type { GateResult } from "./src/gate-runner.ts";
 export {
+  lsStaged,
+  lsTree,
   readGitConfig,
   readGitConfigAll,
   setGitConfig,
+  showFile,
   stagedChurn,
   stagedFiles,
 } from "./src/git.ts";
@@ -67,11 +72,14 @@ export {
   DEFAULT_TAXONOMY,
   isStatusField,
   isStructuralField,
+  loadTaxonomy,
   mergeTaxonomy,
+  parseTaxonomyOverride,
   resolvePrefix,
+  TAXONOMY_FILE,
 } from "./src/taxonomy.ts";
 export type { EdgeKind, Taxonomy } from "./src/taxonomy.ts";
 export type { Edge, GovNode, Graph, Severity, ValidationFinding } from "./src/types.ts";
 
 /** Current package version. Kept in sync with the `version` field in deno.json. */
-export const VERSION: string = "0.0.1";
+export const VERSION: string = "0.1.0";
