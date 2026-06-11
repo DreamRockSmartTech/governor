@@ -1,9 +1,9 @@
 # Governor — Design of Record
 
-> **Status:** design locked, pre-implementation (`0.0.1` stubs published). This document is the
-> authoritative design for Governor's governance controls. It captures _decisions and their
-> rationale_, not implementation. Sections marked **TBD** are deliberately deferred to
-> implementation time.
+> **Status:** design locked and implemented (`0.1.0`). This document is the authoritative design for
+> Governor's governance controls. It captures _decisions and their rationale_, not implementation;
+> where implementation reversed a decision, an ADR in [decisions/](decisions/) records it and this
+> document is updated. Sections marked **TBD** are deliberately deferred.
 
 ## What Governor is
 
@@ -19,11 +19,12 @@ required.
 
 ### Packages
 
-| Package                    | Role                                                                    |
-| -------------------------- | ----------------------------------------------------------------------- |
-| `@dreamrock/governor-core` | Frontend-agnostic engine: parser, graph, validators, runner, authority. |
-| `@dreamrock/governor-cli`  | Reference command-line frontend.                                        |
-| `@dreamrock/governor`      | Flat umbrella package (re-exports core).                                |
+| Package                     | Role                                                                    |
+| --------------------------- | ----------------------------------------------------------------------- |
+| `@dreamrock/governor-core`  | Frontend-agnostic engine: parser, graph, validators, runner, authority. |
+| `@dreamrock/governor-cli`   | Reference command-line frontend.                                        |
+| `@dreamrock/governor-skill` | Agent skill — the cooperative layer (control 6's defense-in-depth).     |
+| `@dreamrock/governor`       | Flat umbrella package (re-exports core).                                |
 
 A future VSCode extension is a sibling frontend over the same core.
 

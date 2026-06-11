@@ -1,4 +1,4 @@
-# Governor (WIP PRE-ALPHA - NOT STABLE)
+# Governor
 
 Portable, git-native governance for any repository.
 
@@ -7,10 +7,20 @@ decisions, and work items — stored as plain files in the repo and enforced wit
 and signature-backed authority checks. The graph degrades to plain `ls`/`cat`; no renderer or
 service is required.
 
-> **Status:** early development (`0.0.1`). The engine is working end-to-end: a repo can be loaded,
-> validated, mutated, gated, and governed via git hooks — with both **plumbing** (precise,
-> graph-aware primitives) and **porcelain** (task-shaped `next`/`work`/`done`) command layers, à la
-> git.
+> **Status: beta (`0.1.0`).** The engine works end-to-end and governs this repository itself: load,
+> validate, mutate, gate, and enforce via git hooks — with **plumbing** (precise, graph-aware
+> primitives) and **porcelain** (task-shaped `next`/`work`/`done`) command layers, à la git, plus
+> staged-snapshot out-of-band enforcement. Pre-1.0: the public API may still change between minor
+> versions. POSIX platforms only (the hook layer is `sh` + executable bits).
+
+## Install
+
+```sh
+deno install -gA -n governor jsr:@dreamrock/governor-cli   # the CLI
+deno run -A jsr:@dreamrock/governor-skill/install          # the agent skill (optional)
+```
+
+Then, in your repository: `governor init` (requires the git signing mandate — see below).
 
 ## Commands
 

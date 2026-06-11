@@ -7,15 +7,15 @@
  * umbrella that re-exports across `@dreamrock/governor-core` and frontends.
  *
  * Components:
- * - `@dreamrock/governor-core` — the frontend-agnostic governance library.
+ * - `@dreamrock/governor-core` — the frontend-agnostic governance library (re-exported here in full).
  * - `@dreamrock/governor-cli` — the reference command-line frontend.
- *
- * This is a namespace-reservation stub for the initial `0.0.1` publish to JSR.
+ * - `@dreamrock/governor-skill` — the agent skill (cooperative layer).
  *
  * @module
  */
 
+export * from "@dreamrock/governor-core";
 export { VERSION as CORE_VERSION } from "@dreamrock/governor-core";
 
 /** Current package version. Kept in sync with the `version` field in deno.json. */
-export const VERSION: string = "0.0.1";
+export const VERSION: string = "0.1.0";

@@ -1,8 +1,11 @@
 {
   "name": "@dreamrock/governor-core",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "license": "MIT",
   "exports": "./mod.ts",
+  "publish": {
+    "exclude": ["tests/"]
+  },
   "imports": {
     "@std/yaml": "jsr:@std/yaml@^1.0.5",
     "@std/fs": "jsr:@std/fs@^1.0.6",

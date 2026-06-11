@@ -3,7 +3,28 @@
 All notable changes to Governor are recorded here. Versions follow
 [Semantic Versioning 2.0.0](https://semver.org/).
 
-## Unreleased
+## 0.1.0 — 2026-06-11
+
+The first real release: the six controls, the plumbing + porcelain command layers, git-hook
+enforcement (including the staged-snapshot out-of-band boundary), the repo taxonomy seam, and the
+agent skill — dogfooded on this repository and on the H3G reference tree. Pre-1.0 per SemVer: the
+public API may change between minor versions. POSIX platforms only.
+
+### Added — Phase D hardening + release engineering
+
+- **CLI integration suite** (`cli/tests/cli.e2e.ts`): drives the command runners against real temp
+  git repositories — `init` mandate/idempotency/no-clobber, the `new`→`set`→`done` lifecycle with
+  counters and freeze, the gate runner (bidirectional status), `done` refusing on a failing gate,
+  `check --staged` boundary behavior, `review-check` binding/blocking, and the installed hooks
+  end-to-end through actual `git commit` (including the `GOVERNOR=0` bypass).
+- **CI** (`.github/workflows/ci.yml`): fmt/lint/type-check/tests + `governor check` on this repo's
+  own governance tree + a JSR publish dry-run, on every push/PR. **Publish workflow**
+  (`.github/workflows/publish.yml`): publishes all packages to JSR via GitHub OIDC on a `v*` tag.
+- `gate run` surfaces the human-owned `partial` bypass on a failed gate (control 2's escape hatch is
+  now visible to the operator, not just to readers of the frontmatter).
+- `governor edge` rejects an unknown op instead of silently treating it as `add`; shared
+  `asList`/`statusOf`/`DONE_STATUSES` helpers replace five private copies; published packages
+  exclude their test directories.
 
 ### Added — `governor check --staged`: out-of-band enforcement (controls 1 & 5)
 

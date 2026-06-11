@@ -60,4 +60,4 @@ export async function installSkill(destDir: string): Promise<InstallResult> {
 }
 
 /** Current package version. Kept in sync with the `version` field in deno.json. */
-export const VERSION: string = "0.0.1";
+export const VERSION: string = "0.1.0";
