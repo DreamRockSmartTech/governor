@@ -145,12 +145,12 @@ function diffEdgeField(
   const reverse = taxonomy.edges[kind]?.reverse ?? null;
 
   for (const target of stagedTargets.filter((t) => !headTargets.includes(t))) {
-    if (addedEdgeIsLegal(head, staged, id, kind, reverse, target, taxonomy)) continue;
+    if (addedEdgeIsLegal(head, staged, id, reverse, target, taxonomy)) continue;
     out.push(outOfBand(id, `added ${kind} -> "${target}"`, frozenBy));
   }
 
   for (const target of headTargets.filter((t) => !stagedTargets.includes(t))) {
-    if (removedEdgeIsLegal(head, staged, id, kind, reverse, target, taxonomy)) continue;
+    if (removedEdgeIsLegal(head, staged, id, reverse, target, taxonomy)) continue;
     out.push(outOfBand(id, `removed ${kind} -> "${target}"`, frozenBy));
   }
 }
