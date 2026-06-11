@@ -105,14 +105,20 @@ export async function dispatch(argv: string[], version: string): Promise<number>
         field: positional[2] ?? "",
         value: positional[3] ?? "",
       });
-    case "edge":
+    case "edge": {
+      const op = positional[1];
+      if (op !== "add" && op !== "rm") {
+        console.error(`edge: unknown op "${op ?? ""}" — use \`edge add\` or \`edge rm\``);
+        return 1;
+      }
       return await runEdge({
         root: flags.root,
-        op: positional[1] === "rm" ? "rm" : "add",
+        op,
         from: positional[2] ?? "",
         kind: positional[3] ?? "",
         to: positional[4] ?? "",
       });
+    }
     case "status":
       return await runStatus({
         root: flags.root,

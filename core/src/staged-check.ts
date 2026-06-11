@@ -28,6 +28,7 @@
  */
 
 import type { Taxonomy } from "./taxonomy.ts";
+import { asList } from "./fields.ts";
 import { blastRadius } from "./graph.ts";
 import { freezeState } from "./freeze.ts";
 import type { GovNode, Graph, ValidationFinding } from "./types.ts";
@@ -226,13 +227,6 @@ function cliEdgeLegal(head: Graph, from: string, to: string, taxonomy: Taxonomy)
   if (frozenBy.length > 0) return false;
   const dependents = blastRadius(head, from, "structural", taxonomy).filter((n) => n !== to);
   return dependents.length === 0;
-}
-
-/** Normalize a frontmatter edge value to a string list. */
-function asList(value: unknown): string[] {
-  if (typeof value === "string") return [value];
-  if (Array.isArray(value)) return value.filter((v): v is string => typeof v === "string");
-  return [];
 }
 
 function outOfBand(id: string, what: string, frozenBy: string[]): ValidationFinding {

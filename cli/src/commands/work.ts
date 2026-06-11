@@ -10,16 +10,16 @@
  */
 
 import {
+  asList,
   blastRadius,
   DEFAULT_TAXONOMY,
+  DONE_STATUSES,
   freezeState,
-  type GovNode,
   type Graph,
+  statusOf,
   type Taxonomy,
 } from "@dreamrock/governor-core";
 import { loadTree } from "../write.ts";
-
-const DONE_STATUSES = new Set(["complete", "closed", "cleared"]);
 
 /** The done-state of a single blocker. */
 export interface BlockerState {
@@ -38,17 +38,6 @@ export interface NodeContext {
   downstream: string[];
   /** The produced gate + its status, when the node declares one. */
   gate: { id: string; status: string } | null;
-}
-
-function statusOf(node: GovNode | undefined): string {
-  const s = node?.frontmatter.status;
-  return typeof s === "string" ? s : "";
-}
-
-function asList(value: unknown): string[] {
-  if (typeof value === "string") return [value];
-  if (Array.isArray(value)) return value.filter((v): v is string => typeof v === "string");
-  return [];
 }
 
 /** Compute the orientation view for `id`, or `null` if it does not exist. Pure. */

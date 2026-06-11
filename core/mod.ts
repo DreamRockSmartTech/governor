@@ -16,6 +16,7 @@
  */
 
 export { splitFrontmatter } from "./src/frontmatter.ts";
+export { asList, DONE_STATUSES, statusOf } from "./src/fields.ts";
 export type { ParsedDocument } from "./src/frontmatter.ts";
 export { serializeNode } from "./src/serialize.ts";
 export { loadGovernance, nodeFromSource } from "./src/loader.ts";
@@ -81,4 +82,4 @@ export type { EdgeKind, Taxonomy } from "./src/taxonomy.ts";
 export type { Edge, GovNode, Graph, Severity, ValidationFinding } from "./src/types.ts";
 
 /** Current package version. Kept in sync with the `version` field in deno.json. */
-export const VERSION: string = "0.0.1";
+export const VERSION: string = "0.1.0";

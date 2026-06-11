@@ -9,7 +9,7 @@
  * @module
  */
 
-import { join } from "@std/path";
+import { dirname, join } from "@std/path";
 import {
   buildGraph,
   type GovNode,
@@ -46,7 +46,7 @@ export async function loadTree(root: string): Promise<Tree> {
  */
 export async function writeNode(root: string, node: GovNode): Promise<string> {
   const target = node.path && node.path.length > 0 ? node.path : defaultPath(root, node);
-  await Deno.mkdir(dirOf(target), { recursive: true });
+  await Deno.mkdir(dirname(target), { recursive: true });
   await Deno.writeTextFile(target, serializeNode(node.frontmatter, node.body));
   return target;
 }
@@ -64,9 +64,4 @@ export async function regenIndex(root: string): Promise<void> {
 /** The conventional file path for a new node: `<root>/<nodeType>s/<id>.md`. */
 function defaultPath(root: string, node: GovNode): string {
   return join(root, `${node.nodeType}s`, `${node.id}.md`);
-}
-
-/** The directory portion of a file path. */
-function dirOf(path: string): string {
-  return path.slice(0, path.lastIndexOf("/"));
 }

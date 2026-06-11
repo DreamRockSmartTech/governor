@@ -19,6 +19,7 @@
  */
 
 import { isStatusField, isStructuralField, type Taxonomy } from "./taxonomy.ts";
+import { asList } from "./fields.ts";
 import { blastRadius, buildGraph } from "./graph.ts";
 import { guardMutation } from "./freeze.ts";
 import { validate } from "./validate.ts";
@@ -275,13 +276,6 @@ function dropEdge(node: GovNode, field: string, value: string): GovNode {
 /** A copy of `node` carrying a new frontmatter mapping. */
 function withFrontmatter(node: GovNode, frontmatter: Record<string, unknown>): GovNode {
   return { ...node, frontmatter };
-}
-
-/** Normalize a frontmatter edge value to a string list. */
-function asList(value: unknown): string[] {
-  if (typeof value === "string") return [value];
-  if (Array.isArray(value)) return value.filter((v): v is string => typeof v === "string");
-  return [];
 }
 
 /**
