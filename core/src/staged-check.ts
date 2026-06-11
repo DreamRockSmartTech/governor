@@ -145,7 +145,7 @@ function diffEdgeField(
   const reverse = taxonomy.edges[kind]?.reverse ?? null;
 
   for (const target of stagedTargets.filter((t) => !headTargets.includes(t))) {
-    if (addedEdgeIsLegal(head, staged, id, reverse, target, taxonomy)) continue;
+    if (addedEdgeIsLegal(head, staged, id, kind, reverse, target, taxonomy)) continue;
     out.push(outOfBand(id, `added ${kind} -> "${target}"`, frozenBy));
   }
 
@@ -168,12 +168,14 @@ function addedEdgeIsLegal(
   head: Graph,
   staged: Graph,
   id: string,
+  kind: string,
   reverse: string | null,
   target: string,
   taxonomy: Taxonomy,
 ): boolean {
+  if (isWeakKind(kind, taxonomy)) return true; // mirrors addEdge's weak-edge exemption
   const frozen = freezeState(head, id, taxonomy).frozenBy.length > 0;
-  if (!reverse) return !frozen; // weak one-way edge: only freeze constrains it
+  if (!reverse) return !frozen; // one-way structural edge: only freeze constrains it
 
   const declaredAtHead = asList(head.byId.get(target)?.frontmatter[reverse]).includes(id);
   if (declaredAtHead) return true; // (a) reconciliation backfill
@@ -220,6 +222,16 @@ function removedEdgeIsLegal(
  * `from` is not frozen by anyone but `to`, and has no dependents besides `to`
  * (the CLI's counterparty exclusion on both guards).
  */
+/**
+ * Whether `kind` is a weak (non-structural, non-freezing) annotation edge —
+ * exempt from the freeze guard on `governor edge add` (mirrored here), since
+ * adding a `decisions` or `cites` link changes no meaning.
+ */
+function isWeakKind(kind: string, taxonomy: Taxonomy): boolean {
+  const def = taxonomy.edges[kind];
+  return def !== undefined && !def.structural && !def.freezes;
+}
+
 function cliEdgeLegal(head: Graph, from: string, to: string, taxonomy: Taxonomy): boolean {
   const frozenBy = freezeState(head, from, taxonomy).frozenBy.filter((n) => n !== to);
   if (frozenBy.length > 0) return false;

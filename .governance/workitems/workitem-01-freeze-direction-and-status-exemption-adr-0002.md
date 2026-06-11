@@ -6,6 +6,8 @@ status: complete
 title: Freeze direction and status exemption (ADR-0002)
 owner: j.bellero@dreamrocksmarttech.com
 parent: masterplan-01-road-to-v1
+cites:
+  - decision-02-freeze-direction-depended-upon-node-freezes-status-is-workflow-exempt
 ---
 
 ## Description

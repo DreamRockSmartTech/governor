@@ -18,7 +18,7 @@
  * @module
  */
 
-import { isStatusField, isStructuralField, type Taxonomy } from "./taxonomy.ts";
+import { type EdgeKind, isStatusField, isStructuralField, type Taxonomy } from "./taxonomy.ts";
 import { asList } from "./fields.ts";
 import { blastRadius, buildGraph } from "./graph.ts";
 import { guardMutation } from "./freeze.ts";
@@ -138,12 +138,16 @@ export function addEdge(
   to: string,
   taxonomy: Taxonomy,
 ): GovNode[] {
-  const reverse = requireEdgeKind(kind, taxonomy);
+  const edgeDef = requireEdgeKind(kind, taxonomy);
+  const reverse = edgeDef.reverse;
   const fromNode = requireNode(graph, from, "edge");
   const toNode = requireNode(graph, to, "edge");
   // Pure symmetry reconciliation changes no meaning, so it is exempt from both
-  // the freeze guard and the dependents-block guard.
-  if (!isReconciliation(toNode, reverse, from)) {
+  // the freeze guard and the dependents-block guard. Weak (non-freezing,
+  // non-structural) edges are also exempt: adding a `decisions` or `cites` link
+  // to a frozen node does not change its meaning.
+  const isWeak = !edgeDef.freezes && !edgeDef.structural;
+  if (!isWeak && !isReconciliation(toNode, reverse, from)) {
     guard(graph, from, taxonomy, to);
     blockIfDependents(graph, from, kind, to, taxonomy);
   }
@@ -172,7 +176,7 @@ export function removeEdge(
   to: string,
   taxonomy: Taxonomy,
 ): GovNode[] {
-  const reverse = requireEdgeKind(kind, taxonomy);
+  const { reverse } = requireEdgeKind(kind, taxonomy);
   const fromNode = requireNode(graph, from, "edge");
   const toNode = requireNode(graph, to, "edge");
   guard(graph, from, taxonomy, to);
@@ -250,11 +254,11 @@ function requireNode(graph: Graph, id: string, ctx: string): GovNode {
   return node;
 }
 
-/** Validate that `kind` is a known edge; return its reverse (may be null). */
-function requireEdgeKind(kind: string, taxonomy: Taxonomy): string | null {
+/** Validate that `kind` is a known edge kind and return its definition. */
+function requireEdgeKind(kind: string, taxonomy: Taxonomy): EdgeKind {
   const edge = taxonomy.edges[kind];
   if (!edge) throw new MutationError(`unknown edge kind "${kind}"`);
-  return edge.reverse;
+  return edge;
 }
 
 /** A copy of `node` with `field`'s list extended by `value` (deduped). */

@@ -202,3 +202,24 @@ Deno.test("a criteria_check change on a gate with dependents is blocked; on a fr
   assertEquals(found.filter((f) => f.code === "out-of-band-structural").length, 1);
   assertEquals(found[0].nodeId, "gate-01-g");
 });
+
+Deno.test("adding a weak (non-structural, non-freezing) edge to a frozen node passes", () => {
+  // Mirrors addEdge's weak-edge exemption: `decisions`/`cites` annotation
+  // links change no meaning, so the CLI allows them on frozen nodes — the
+  // boundary must judge the same hand-visible delta as legal.
+  const head = graph([
+    ...frozenFixture(),
+    node("decision-01-d", "decision", { status: "accepted" }),
+  ]);
+  const staged = graph([
+    node("epic-01-m", "epic", {
+      children: ["workitem-01-c"],
+      title: "Mandate",
+      decisions: ["decision-01-d"],
+    }, "The mandate.\n"),
+    node("workitem-01-c", "workitem", { parent: "epic-01-m", title: "Child" }, "Child body.\n"),
+    node("decision-01-d", "decision", { status: "accepted" }),
+  ]);
+
+  assertEquals(codes(head, staged), []);
+});

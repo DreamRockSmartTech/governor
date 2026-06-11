@@ -1,5 +1,7 @@
 {
   "project": 1,
   "masterplan": 1,
-  "workitem": 12
+  "workitem": 12,
+  "decision": 2,
+  "gate": 2
 }

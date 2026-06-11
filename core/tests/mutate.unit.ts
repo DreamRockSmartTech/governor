@@ -1,4 +1,5 @@
 import { assert, assertEquals, assertThrows } from "@std/assert";
+import { asList } from "../src/fields.ts";
 import { DEFAULT_TAXONOMY } from "../src/taxonomy.ts";
 import { buildGraph } from "../src/graph.ts";
 import {
@@ -180,6 +181,27 @@ Deno.test("addEdge blocks a structural change when the source has dependents", (
     MutationError,
   );
   assert(err.message.includes("workitem-01-x") || err.message.includes("supersede"));
+});
+
+Deno.test("addEdge of a weak (non-structural, non-freezing) edge on a frozen node succeeds", () => {
+  // A masterplan frozen by its children should still accept `decisions` links —
+  // they carry no meaning-lock semantics and must not require supersession.
+  const nodes = [
+    node("masterplan-01-mp", "masterplan", { children: ["workitem-01-wi"] }),
+    node("workitem-01-wi", "workitem", { parent: "masterplan-01-mp" }),
+    node("decision-01-d", "decision", { status: "accepted" }),
+  ];
+  const graph = buildGraph(nodes, DEFAULT_TAXONOMY);
+
+  const updated = addEdge(
+    graph,
+    "masterplan-01-mp",
+    "decisions",
+    "decision-01-d",
+    DEFAULT_TAXONOMY,
+  );
+  const mp = updated.find((n) => n.id === "masterplan-01-mp")!;
+  assertEquals(asList(mp.frontmatter.decisions), ["decision-01-d"]);
 });
 
 Deno.test("removeEdge clears both sides", () => {

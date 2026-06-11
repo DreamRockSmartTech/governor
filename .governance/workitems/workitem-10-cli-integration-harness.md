@@ -6,6 +6,8 @@ status: complete
 title: CLI integration harness
 owner: j.bellero@dreamrocksmarttech.com
 parent: masterplan-01-road-to-v1
+produces_gate:
+  - gate-01-cli-integration-suite-green
 ---
 
 ## Description

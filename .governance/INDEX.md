@@ -19,6 +19,8 @@ Project root: [[project-01-governor]] (`Governor`).
 | --- | --- |
 | project | 1 |
 | masterplan | 1 |
+| gate | 2 |
+| decision | 2 |
 | workitem | 12 |
 | index | 1 |
 

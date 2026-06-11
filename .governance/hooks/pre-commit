@@ -3,4 +3,22 @@
 # is invalid or contains an out-of-band change vs HEAD (frozen-node edits,
 # hand-made structural changes the CLI would have refused).
 # This repo runs Governor from source (no installed binary).
-deno run -A cli/mod.ts check --staged
+deno run -A cli/mod.ts check --staged || exit 1
+
+# Gate proofs are the true commit blocker (control 2): re-run every gate's
+# runnable now, so a stale `cleared` cannot ship a regression. A failed gate
+# blocks the commit UNLESS a human set the on-record `partial: true` bypass —
+# a tracked field flipped in a signed commit, so `git blame` on the gate file
+# names who accepted shipping over the failure.
+if ! deno run -A cli/mod.ts gate run --all; then
+  blocked=0
+  for gate in .governance/gates/*.md; do
+    [ -f "$gate" ] || continue
+    if grep -q '^status: failed$' "$gate" && ! grep -Eq "^partial: '?true'?$" "$gate"; then
+      echo "pre-commit: $(basename "$gate" .md) FAILED with no partial bypass — fix the work or set 'partial: true' on record" >&2
+      blocked=1
+    fi
+  done
+  [ "$blocked" -eq 1 ] && exit 1
+  echo "pre-commit: failed gate(s) shipped under partial: true — bypass is on record (git blame the gate file)" >&2
+fi

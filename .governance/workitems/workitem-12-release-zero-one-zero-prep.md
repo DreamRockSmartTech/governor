@@ -6,6 +6,8 @@ status: complete
 title: Release zero one zero prep
 owner: j.bellero@dreamrocksmarttech.com
 parent: masterplan-01-road-to-v1
+produces_gate:
+  - gate-02-publish-dry-run-green
 ---
 
 ## Description
