@@ -68,9 +68,11 @@ export function defaultPolicyHook(hookName: string): string {
   switch (hookName) {
     case "pre-commit":
       return `#!/usr/bin/env sh
-# Governor default pre-commit — reject the commit if the governance tree is invalid.
+# Governor default pre-commit — reject the commit when the STAGED governance
+# snapshot is invalid, or when it contains an out-of-band change vs HEAD
+# (frozen-node edits, hand-made structural changes the CLI would have refused).
 # Edit or remove this file to customize; add your own checks below.
-governor check
+governor check --staged
 `;
     case "commit-msg":
       return `#!/usr/bin/env sh

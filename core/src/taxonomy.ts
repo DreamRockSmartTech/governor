@@ -237,6 +237,15 @@ export async function loadTaxonomy(root: string): Promise<Taxonomy> {
     throw err;
   }
 
+  return parseTaxonomyOverride(raw);
+}
+
+/**
+ * Parse a raw `taxonomy.json` override source and merge it onto the defaults.
+ * The pure counterpart of {@link loadTaxonomy} — used by callers that read the
+ * override from somewhere other than the filesystem (e.g. the staged index).
+ */
+export function parseTaxonomyOverride(raw: string): Taxonomy {
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);

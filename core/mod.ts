@@ -18,9 +18,10 @@
 export { splitFrontmatter } from "./src/frontmatter.ts";
 export type { ParsedDocument } from "./src/frontmatter.ts";
 export { serializeNode } from "./src/serialize.ts";
-export { loadGovernance } from "./src/loader.ts";
+export { loadGovernance, nodeFromSource } from "./src/loader.ts";
 export { blastRadius, buildGraph } from "./src/graph.ts";
 export { validate } from "./src/validate.ts";
+export { stagedBoundary } from "./src/staged-check.ts";
 export { renderIndex } from "./src/index-view.ts";
 export { freezeState, guardMutation, isFrozen } from "./src/freeze.ts";
 export type { FreezeState } from "./src/freeze.ts";
@@ -38,9 +39,12 @@ export type { CreateResult, NewNodeSpec } from "./src/mutate.ts";
 export { runGate } from "./src/gate-runner.ts";
 export type { GateResult } from "./src/gate-runner.ts";
 export {
+  lsStaged,
+  lsTree,
   readGitConfig,
   readGitConfigAll,
   setGitConfig,
+  showFile,
   stagedChurn,
   stagedFiles,
 } from "./src/git.ts";
@@ -69,6 +73,7 @@ export {
   isStructuralField,
   loadTaxonomy,
   mergeTaxonomy,
+  parseTaxonomyOverride,
   resolvePrefix,
   TAXONOMY_FILE,
 } from "./src/taxonomy.ts";

@@ -42,6 +42,34 @@ export async function setGitConfig(cwd: string, key: string, value: string): Pro
   if (code !== 0) throw new Error(`git config ${key} failed`);
 }
 
+/** List the files committed at `ref` under `prefix` (`git ls-tree -r`). */
+export async function lsTree(cwd: string, ref: string, prefix: string): Promise<string[]> {
+  const { code, stdout } = await git(cwd, ["ls-tree", "-r", "--name-only", ref, "--", prefix]);
+  if (code !== 0 || stdout.length === 0) return [];
+  return stdout.split("\n");
+}
+
+/** List the files in the index under `prefix` (`git ls-files --cached`). */
+export async function lsStaged(cwd: string, prefix: string): Promise<string[]> {
+  const { stdout } = await git(cwd, ["ls-files", "--cached", "--", prefix]);
+  return stdout.length === 0 ? [] : stdout.split("\n");
+}
+
+/**
+ * Read one blob via `git show` — e.g. `HEAD:path` (committed) or `:path` (the
+ * index). Returns `null` when the object does not exist at that ref. The
+ * content is returned untrimmed so byte-stable comparisons hold.
+ */
+export async function showFile(cwd: string, spec: string): Promise<string | null> {
+  const { code, stdout } = await new Deno.Command("git", {
+    args: ["show", spec],
+    cwd,
+    stdout: "piped",
+    stderr: "null",
+  }).output();
+  return code === 0 ? new TextDecoder().decode(stdout) : null;
+}
+
 /** List the paths currently staged in the index (`git diff --cached`). */
 export async function stagedFiles(cwd: string): Promise<string[]> {
   const { stdout } = await git(cwd, ["diff", "--cached", "--name-only"]);

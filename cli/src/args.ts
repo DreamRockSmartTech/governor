@@ -39,7 +39,11 @@ Workflow (porcelain):
   governor done <id>                         Run produced gate, then complete the node
 
 Read:
-  governor check [--root <path>] [--json]    Validate a .governance/ tree
+  governor check [--root <path>] [--json] [--staged]
+                                             Validate a .governance/ tree
+                                             (--staged: validate the staged
+                                             snapshot + block out-of-band
+                                             frozen/structural changes vs HEAD)
   governor index [--root <path>] [--write]   Regenerate the INDEX view
 
 Write (plumbing):
@@ -63,7 +67,7 @@ Options:
  */
 export async function dispatch(argv: string[], version: string): Promise<number> {
   const flags = parseArgs(argv, {
-    boolean: ["json", "write", "help", "all"],
+    boolean: ["json", "write", "help", "all", "staged"],
     string: ["root", "title", ...EDGE_FLAGS],
     default: { root: DEFAULT_ROOT },
   });
@@ -80,7 +84,11 @@ export async function dispatch(argv: string[], version: string): Promise<number>
     case "init":
       return await runInit({ root: flags.root });
     case "check":
-      return await runCheck({ root: flags.root, json: Boolean(flags.json) });
+      return await runCheck({
+        root: flags.root,
+        json: Boolean(flags.json),
+        staged: Boolean(flags.staged),
+      });
     case "index":
       return await runIndex({ root: flags.root, write: Boolean(flags.write) });
     case "new":
