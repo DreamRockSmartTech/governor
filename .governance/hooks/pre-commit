@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+# Governor pre-commit — reject the commit if the governance tree is invalid.
+# This repo runs Governor from source (no installed binary).
+deno run -A cli/mod.ts check
