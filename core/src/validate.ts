@@ -51,7 +51,31 @@ function checkSchema(nodes: GovNode[], taxonomy: Taxonomy, out: ValidationFindin
     checkId(node, taxonomy, out);
     checkStatus(node, taxonomy, out);
     checkUid(node, out);
+    checkCriteria(node, out);
   }
+}
+
+/**
+ * A gate's `criteria_check` must be the structured `{runnable, …}` block
+ * (control 2); a legacy prose string means the gate runner would fail closed
+ * on it. Cosmetic-severity: migrating hand-authored trees should see the gap,
+ * not be blocked by it.
+ */
+function checkCriteria(node: GovNode, out: ValidationFinding[]): void {
+  if (node.nodeType !== "gate") return;
+  const check = node.frontmatter.criteria_check;
+  if (check === undefined) return; // a gate may be human-judged
+  const runnable = typeof check === "object" && check !== null
+    ? (check as Record<string, unknown>).runnable
+    : undefined;
+  if (typeof runnable === "string") return;
+  out.push({
+    severity: "warn",
+    code: "legacy-criteria-check",
+    nodeId: node.id,
+    message: `criteria_check is not a structured {runnable, description, expectation} block — ` +
+      `\`gate run\` will fail closed on it`,
+  });
 }
 
 /** Validate the id grammar and that its prefix agrees with the node type. */

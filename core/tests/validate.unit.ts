@@ -125,6 +125,23 @@ Deno.test("validate does not require a reverse for weak reference kinds", () => 
   assertEquals(codes(nodes).filter((c) => c === "asymmetric-edge"), []);
 });
 
+Deno.test("validate warns on a legacy prose criteria_check (gate runner would fail closed)", () => {
+  const nodes = [
+    node("gate-01-legacy", "gate", { criteria_check: "deno task test (suite 816/0)" }),
+    node("gate-02-ok", "gate", {
+      criteria_check: { runnable: "checks/g2.sh", description: "d", expectation: "e" },
+    }),
+    node("gate-03-none", "gate"),
+  ];
+  const g = buildGraph(nodes, DEFAULT_TAXONOMY);
+  const findings = validate(g, DEFAULT_TAXONOMY);
+
+  const legacy = findings.filter((f) => f.code === "legacy-criteria-check");
+  assertEquals(legacy.length, 1);
+  assertEquals(legacy[0].nodeId, "gate-01-legacy");
+  assertEquals(legacy[0].severity, "warn");
+});
+
 Deno.test("validate does not require a reverse for one-way cites edges", () => {
   const nodes = [
     node("epic-01-a", "epic", { cites: ["decision-00-x"] }),
