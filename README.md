@@ -24,7 +24,9 @@ governor work <id>                         # orientation view for a node (read-o
 governor done <id>                         # run the produced gate, then complete the node
 
 # Read
-governor check [--root <path>] [--json]    # validate a .governance/ tree (exit 1 on any error)
+governor check [--root <path>] [--json] [--staged]
+                                           # validate a .governance/ tree (exit 1 on any error);
+                                           # --staged: the staged snapshot + out-of-band rules vs HEAD
 governor index [--root <path>] [--write]   # regenerate the INDEX view (stdout, or --write the file)
 
 # Write (plumbing)
@@ -41,9 +43,11 @@ governor version
 `init` installs Governor into a repo's git lifecycle (Husky-shaped). It asserts the signing mandate
 (failing hard if `user.name`/`user.email`/`commit.gpgsign`/`gpg.program`/`user.signingkey` are
 unset), points `core.hooksPath` at `.governance/hooks/_` (a generated, gitignored engine layer), and
-seeds editable policy hooks in `.governance/hooks/`. The default `pre-commit` runs `governor check`
-and rejects a commit when the tree is invalid; teams edit/extend the policy hooks freely. Bypass
-with `GOVERNOR=0` (or `git --no-verify`).
+seeds editable policy hooks in `.governance/hooks/`. The default `pre-commit` runs
+`governor check --staged` and rejects a commit when the staged snapshot is invalid **or contains an
+out-of-band change vs HEAD** (frozen-node edits, hand-made structural changes the CLI would have
+refused); teams edit/extend the policy hooks freely. Bypass with `GOVERNOR=0` (or
+`git --no-verify`).
 
 The **workflow** commands are porcelain — thin, task-shaped compositions of the plumbing (the way
 git `pull` wraps `fetch`+`merge`). `next` finds ready work, `work` orients you on an item, and
@@ -69,16 +73,32 @@ and dependents guards so drift can be repaired.
 
 ## Packages
 
-This is a Deno workspace publishing three [JSR](https://jsr.io) packages:
+This is a Deno workspace publishing four [JSR](https://jsr.io) packages:
 
-| Package                                                               | Role                                                                           |
-| --------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| [`@dreamrock/governor-core`](https://jsr.io/@dreamrock/governor-core) | The frontend-agnostic governance library — the engine every frontend consumes. |
-| [`@dreamrock/governor-cli`](https://jsr.io/@dreamrock/governor-cli)   | The reference command-line frontend.                                           |
-| [`@dreamrock/governor`](https://jsr.io/@dreamrock/governor)           | Umbrella / convenience package.                                                |
+| Package                                                                 | Role                                                                           |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| [`@dreamrock/governor-core`](https://jsr.io/@dreamrock/governor-core)   | The frontend-agnostic governance library — the engine every frontend consumes. |
+| [`@dreamrock/governor-cli`](https://jsr.io/@dreamrock/governor-cli)     | The reference command-line frontend.                                           |
+| [`@dreamrock/governor-skill`](https://jsr.io/@dreamrock/governor-skill) | The agent skill — teaches a coding agent the governed workflow (below).        |
+| [`@dreamrock/governor`](https://jsr.io/@dreamrock/governor)             | Umbrella / convenience package.                                                |
 
 Building an extension or alternate frontend (e.g. a VSCode extension)? Depend on
 `@dreamrock/governor-core`.
+
+## Agent skill
+
+The hooks are the enforcing layer; the **skill is the cooperative layer** (defense in depth — see
+DESIGN.md control 6). It instructs a coding agent working in a governed repo to synchronize with the
+user through an adversarial design interview before coding, encode the agreed work as governance
+nodes through the CLI, track sessions in free-edit prose, and finish through gates with one WorkItem
+per commit. Install it into a repo's agent-skills directory:
+
+```sh
+deno run -A jsr:@dreamrock/governor-skill/install              # → .claude/skills/governor/
+deno run -A jsr:@dreamrock/governor-skill/install --dest <dir> # custom location
+```
+
+Re-running upgrades a stale copy in place and leaves a current one untouched.
 
 ## Design
 

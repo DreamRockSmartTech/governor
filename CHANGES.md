@@ -5,6 +5,42 @@ All notable changes to Governor are recorded here. Versions follow
 
 ## Unreleased
 
+### Added — `governor check --staged`: out-of-band enforcement (controls 1 & 5)
+
+The pre-commit teeth the design promised. `check --staged` materializes the **staged snapshot** and
+HEAD from git blobs (the working tree plays no part), runs the full validator over the staged tree,
+and judges the delta with boundary rules that mirror the CLI's own legality — anything the CLI could
+have produced passes, anything it would have refused blocks:
+
+- Edits to a **frozen** node — body, plain fields, deletion — block (`frozen-body-edit`,
+  `frozen-node-edited`, `frozen-node-deleted`); `status` stays workflow-exempt (ADR-0002).
+- **Symmetric hand-made structural changes** — both sides edited consistently, invisible to a
+  snapshot-only check — block (`out-of-band-structural`) unless at least one direction of
+  `governor edge add|rm` could have performed them (freeze + dependents judged at HEAD, counterparty
+  excluded). Reconciliation backfills and new-node wiring are always recognized as legal.
+- A `criteria_check` change on a gate that is frozen or has dependents blocks.
+
+Core: `stagedBoundary` (pure; graphs in, findings out), `nodeFromSource`, `parseTaxonomyOverride`,
+git plumbing `lsTree`/`lsStaged`/`showFile`. The seeded default `pre-commit` policy hook now runs
+`governor check --staged`.
+
+### Added — legacy `criteria_check` warning
+
+`validate` warns (`legacy-criteria-check`, never blocks) when a gate's `criteria_check` is not the
+structured `{runnable, …}` block — migrating hand-authored trees see that `gate run` would fail
+closed instead of being surprised by it.
+
+### Added — `@dreamrock/governor-skill`: the agent skill package
+
+The cooperative layer of control 6's defense-in-depth, as an installable package. `SKILL.md` teaches
+a coding agent the governed workflow: a grill-me-style adversarial design interview to synchronize
+with the user before coding (one question at a time, dependencies are the prize, checkpoint
+summaries, and a hard gate — no code until the user confirms the workitem decomposition); when and
+how to create nodes through the CLI; the free-edit prose sections used for review and tracking
+(`## Description` / `## Evidence` / `## Approach` / `## Session log`); and how to respond when the
+hooks push back. Install: `deno run -A jsr:@dreamrock/governor-skill/install` (default dest
+`.claude/skills/governor/`, idempotent, upgrades stale copies).
+
 ### Changed — freeze protects the depended-upon node; status is workflow-exempt (ADR-0002)
 
 A design correction (see [docs/decisions/ADR-0002](docs/decisions/ADR-0002-freeze-direction.md)),
