@@ -82,4 +82,4 @@ export type { EdgeKind, Taxonomy } from "./src/taxonomy.ts";
 export type { Edge, GovNode, Graph, Severity, ValidationFinding } from "./src/types.ts";
 
 /** Current package version. Kept in sync with the `version` field in deno.json. */
-export const VERSION: string = "0.1.0";
+export const VERSION: string = "0.1.1";

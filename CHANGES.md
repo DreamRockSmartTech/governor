@@ -3,6 +3,34 @@
 All notable changes to Governor are recorded here. Versions follow
 [Semantic Versioning 2.0.0](https://semver.org/).
 
+## 0.1.1 — 2026-06-11
+
+Dogfood completion and the skill's full directory format.
+
+### Added
+
+- **Skill directory format**: `@dreamrock/governor-skill` now ships `SKILL.md` (lean core with a
+  when-to-read table) plus `references/` — `interview.md` (the complete adversarial design-interview
+  methodology, governance-grounded), `cli.md` (command recipes including the sanctioned fresh-window
+  `criteria_check` hand-edit and the `partial: true` audit trail), and `structure.md` (the
+  `.governance/` layout, ownership zones, and drift fence). `installSkill` installs the whole
+  directory from a `SKILL_FILES` manifest with per-file idempotency.
+- **Runnable gates in Governor's own tree**: gate-01 (CLI e2e suite) and gate-02 (publish dry-run),
+  proofs committed under `.governance/checks/`, produced by workitems 10/12. The repo's pre-commit
+  policy hook re-runs every gate proof on each commit and blocks on a failed gate unless the
+  human-owned `partial: true` bypass is on record in the gate file (git-blame auditable via the
+  signed commit that flips it).
+- **Decision nodes**: ADR-0001/0002 are now `decision` nodes in the self-governance tree, linked via
+  weak `decisions`/`cites` edges (the docs/ originals remain).
+
+### Fixed
+
+- Weak (non-structural, non-freezing) edge kinds — `decisions`, `cites` — are exempt from the freeze
+  guard on `governor edge add`, and `stagedBoundary` mirrors the exemption: annotation links can be
+  added to frozen nodes without supersession.
+- `deno fmt`/`deno lint` exclude `.governance/` and `docs/` (governance prose is owned by the CLI
+  and hooks, not the formatter; CI was failing on it).
+
 ## 0.1.0 — 2026-06-11
 
 The first real release: the six controls, the plumbing + porcelain command layers, git-hook
