@@ -11,4 +11,7 @@ children:
   - workitem-02-taxonomy-seam-repo-override-derived-freeze-and-blast-radius
   - workitem-03-dogfood-self-governance-tree-and-hook-install
   - workitem-04-yaml-date-round-trip-corruption
+  - workitem-05-staged-snapshot-check-out-of-band-enforcement
+  - workitem-06-legacy-criteria-check-warning-and-gate-partial-display
+  - workitem-07-agent-skill-package
 ---
