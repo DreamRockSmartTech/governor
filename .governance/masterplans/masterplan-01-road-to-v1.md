@@ -10,4 +10,5 @@ children:
   - workitem-01-freeze-direction-and-status-exemption-adr-0002
   - workitem-02-taxonomy-seam-repo-override-derived-freeze-and-blast-radius
   - workitem-03-dogfood-self-governance-tree-and-hook-install
+  - workitem-04-yaml-date-round-trip-corruption
 ---

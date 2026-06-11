@@ -40,3 +40,11 @@ Deno.test("serializeNode round-trips through splitFrontmatter", () => {
   assertEquals(reparsed.frontmatter, fm);
   assertEquals(reparsed.body, body);
 });
+
+Deno.test("a node with an unquoted date round-trips byte-stable through parse + serialize", () => {
+  const fm = { id: "epic-01-a", node_type: "epic", created_at: "2026-05-22" };
+  const out = serializeNode(fm, "Body.\n");
+  const back = splitFrontmatter(out);
+  assertEquals(back.frontmatter?.created_at, "2026-05-22");
+  assertEquals(out.includes("created_at: 2026-05-22\n"), true);
+});
