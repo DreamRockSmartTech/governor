@@ -37,11 +37,23 @@ export async function runGateCommand(opts: GateOptions): Promise<number> {
     const result = await runGate(gate, dirname(opts.root));
     await writeNode(opts.root, result.node);
     console.log(`${gate.id}: ${result.status}`);
+    const note = partialNote(gate, result.status);
+    if (note) console.log(`  ${note}`);
     if (result.output.trim()) console.log(indent(result.output.trim()));
     if (result.status === "failed") anyFailed = true;
   }
   await regenIndex(opts.root);
   return anyFailed ? 1 : 0;
+}
+
+/**
+ * The operator note for a failed gate whose human-owned `partial` bypass is
+ * set — the check fails AND a human consciously accepted shipping (control 2).
+ * `null` when there is nothing to surface. Pure.
+ */
+export function partialNote(gate: GovNode, status: "cleared" | "failed"): string | null {
+  if (status !== "failed" || gate.frontmatter.partial !== true) return null;
+  return "partial: true — a human accepted shipping over this failing gate (on record)";
 }
 
 /** Resolve a single requested gate into a list (empty if absent / not a gate). */
