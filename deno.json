@@ -9,11 +9,11 @@
     "check": "deno check core/ cli/ meta/ skill/",
     "lint": "deno lint",
     "fmt": "deno fmt",
-    "test": "deno test -A '**/*.unit.ts'",
+    "test": "deno test -A '**/*.unit.ts' '**/*.e2e.ts'",
     "gov": "deno run -A cli/mod.ts"
   },
   "test": {
-    "include": ["**/*.unit.ts"]
+    "include": ["**/*.unit.ts", "**/*.e2e.ts"]
   },
   "fmt": {
     "useTabs": false,
