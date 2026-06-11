@@ -19,6 +19,7 @@ children:
   - workitem-10-cli-integration-harness
   - workitem-11-continuous-integration-workflow
   - workitem-12-release-zero-one-zero-prep
+  - workitem-13-skill-reference-expansion
 decisions:
   - decision-01-approval-authority-exclude-approved-by-keep-owner-auto-stamp
   - decision-02-freeze-direction-depended-upon-node-freezes-status-is-workflow-exempt

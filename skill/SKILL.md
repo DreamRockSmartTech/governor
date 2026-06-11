@@ -22,7 +22,8 @@ is the authority.
 
 Two rules carry everything (the foundational invariant):
 
-1. **Structure is CLI-mediated for everyone.** Never write or edit YAML frontmatter by hand. Never
+1. **Structure is CLI-mediated for everyone.** Never write or edit YAML frontmatter by hand (one
+   exception: a fresh gate's `criteria_check`, see [references/cli.md](references/cli.md)). Never
    create a node file by hand. Every structural action goes through `governor` commands. The
    pre-commit hook compares the staged snapshot against HEAD and **rejects** anything the CLI could
    not have produced.
@@ -31,84 +32,70 @@ Two rules carry everything (the foundational invariant):
    on — a parent with children, a blocker, anything superseded) cannot change in meaning at all; to
    change it, supersede it.
 
+## References — read before acting
+
+| When                                                         | Read                                                                                          |
+| ------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
+| Starting Phase 1 (any non-trivial scope)                     | [references/interview.md](references/interview.md) — the full interview method                |
+| Creating nodes, authoring gates, committing                  | [references/cli.md](references/cli.md) — commands, recipes, sharp edges                       |
+| Touching anything under `.governance/`, unsure what is yours | [references/structure.md](references/structure.md) — layout, ownership zones, the drift fence |
+
 ## Phase 1 — Synchronize before you code (the interview)
 
-Do not start coding from a one-line request. First reach shared understanding with the user, then
-encode it as nodes. Run a scoped adversarial design interview (the grill-me method):
+Do not start coding from a one-line request. Run the adversarial design interview
+([references/interview.md](references/interview.md)) until you and the user share one model of the
+work. In brief: ingest the tree first (`governor next`, `governor work <id>`, node prose); present
+the decision branches; descend one branch at a time, **one question per turn**, hunting unstated
+dependencies; checkpoint every few questions; close with a summary and the node plan.
 
-1. **Ingest.** Read the governance tree before asking anything: `governor next` (what is unblocked),
-   `governor work <id>` (status, blockers, downstream, gate) on candidates, and the prose bodies of
-   the nodes involved. Demonstrate you have read them — never ask what a node already answers.
-2. **Present the branches.** State your read of the work as the decision tree you see: the major
-   decision clusters, the dependencies between them, and the workitem decomposition you propose (one
-   reviewable unit per workitem — each will become exactly one commit). Ask which branch to start
-   with.
-3. **Descend one branch at a time, one question per turn.** Probe constraints, failure modes,
-   trade-offs, and above all **dependencies the user has not acknowledged** ("this assumes X is
-   decided — is it?"). Concrete beats abstract; never batch questions; "I don't know" is a finding
-   to log, not a gap to fill unsolicited.
-4. **Checkpoint** every few questions: what is resolved, what is open, which dependencies surfaced.
-   Keep the user oriented in the tree.
-5. **Close with a summary** — decisions locked, open items, risks — and the final node plan: which
-   epics/workitems/gates you will create, with their `--parent` / `--blocks` wiring.
-
-**Gate: do not write code until the user confirms the decomposition.** The confirmed summary is what
-you encode into nodes; anything still open becomes a `blocked_by` edge or an explicitly deferred
-workitem, not a silent assumption.
+**Hard gate: do not write code until the user confirms the decomposition** — which
+epics/workitems/gates you will create, with their `--parent` / `--blocks` / `produces_gate` wiring,
+one reviewable unit per workitem. Anything still open becomes a `blocked_by` edge or a deferred
+workitem, never a silent assumption.
 
 ## Phase 2 — Encode the agreed work as nodes
 
 Create structure only through the CLI (it allocates ids, stamps `owner`, wires both sides of every
-edge, and regenerates the INDEX):
+edge, regenerates the INDEX). Full recipes in [references/cli.md](references/cli.md).
 
 ```sh
 governor new epic     --title "<mandate>"  --parent masterplan-01-…
 governor new workitem --title "<one reviewable unit>" --parent epic-NN-…
-governor new gate     --title "<proof of done>"       # bind via edge below
+governor new gate     --title "<proof of done>"   # author criteria_check NOW — see cli.md
 governor edge add <workitem-id> produces_gate <gate-id>
 governor edge add <workitem-B> blocked_by <workitem-A>   # B waits on A
-governor set <id> <field> <value>     # plain scalars only
-governor status <id> <new-status>     # work/plan status transitions
 ```
 
-When to create what:
+When to create what: **workitem** = the unit of work and review (one workitem ↔ one commit; two
+commits = two workitems). **epic** = a cluster of 3+ related workitems under one mandate. **gate** =
+a machine-runnable proof whenever "done" is checkable — script in `.governance/checks/`, exit 0 =
+cleared. **decision** = a ruling that reverses or constrains earlier design, linked via
+`decisions`/`cites` (weak edges, legal even on frozen nodes).
 
-- **workitem** — the unit of work and of review: one workitem ↔ one commit. If a task needs two
-  commits, it is two workitems.
-- **epic** — a cluster of workitems under one mandate; create it when the interview surfaces 3+
-  related workitems.
-- **gate** — a machine-runnable proof (`criteria_check.runnable`, exit 0 = cleared). Create one
-  whenever "done" is checkable; `governor done` will run it and refuse to complete the node on
-  failure.
-- **decision** — a ruling that reverses or constrains earlier design; link it from affected nodes
-  with `cites`/`decisions`.
+**Write the prose body at creation** — `## Description` / `## Evidence` / `## Approach` go in the
+moment the node exists, before the commit that lands it. A bare frontmatter-only node defeats the
+review boundary.
 
 ## Phase 3 — Track the session in prose
 
-While working, keep the living record in the workitem's **body** (free-edit; the frontmatter stays
-untouched). Use these sections — they are what the human reviews:
-
-- `## Description` — what this unit is, written for the reviewer.
-- `## Evidence` — why it exists: the failing test, the finding, the user ruling that motivated it.
-- `## Approach` — decisions taken while implementing, including rejected alternatives and the
-  reason.
-- `## Session log` — short dated notes when work spans sessions; what changed, what is still open.
-
-Update prose as you go, not retroactively. If a node you need to annotate is frozen, its meaning is
-locked: put the notes on the dependent workitem, or supersede.
+The workitem's body is the living record the human reviews (free-edit; frontmatter stays untouched):
+`## Description` (what, for the reviewer), `## Evidence` (why — the failing test, the finding, the
+ruling), `## Approach` (decisions taken, rejected alternatives), `## Session log` (dated notes when
+work spans sessions). Update as you go, not retroactively. If a node you need to annotate is frozen,
+put the notes on the dependent workitem, or supersede.
 
 ## Phase 4 — Finish through the gate, commit inside the boundary
 
-- `governor done <id>` — runs the node's produced gate; completes the node only when the gate clears
-  (or there is none); regenerates the INDEX. A failing gate keeps the node open — fix the work, not
-  the gate.
+- `governor done <id>` — runs the produced gate; completes the node only when it clears. A failing
+  gate keeps the node open: **fix the work, not the gate.**
+- The pre-commit hook **re-runs every gate proof on every commit** and blocks on any failed gate
+  unless that gate carries the human-owned `partial: true` bypass — a decision that belongs to the
+  user, lands in a signed commit, and is git-blame auditable. Never set it on your own judgment.
 - **One workitem per commit**: stage the workitem node (its creation or its `done` flip) together
-  with the code it covers. The commit-msg hook counts staged workitem files — 0 or >1 blocks the
-  commit — and stamps the evidence-derived `Governor-WorkItem: <id>` binding trailer on a clean
-  pass.
-- A genuinely multi-workitem or zero-workitem commit (bootstrap, docs-only, tree-wide sweep) needs a
-  deliberate, on-record override trailer in the commit message: `Governor-Allow-Multi: <reason>`.
-  Use it consciously and rarely; the reason lands in git history.
+  with the code it covers. The commit-msg hook counts staged workitem files — 0 or >1 blocks — and
+  stamps the evidence-derived `Governor-WorkItem: <id>` trailer.
+- Genuinely multi- or zero-workitem commits need `Governor-Allow-Multi: <reason>` in the message —
+  deliberate, rare, on record.
 - A churn warning ("staged diff is N lines for a single WorkItem") never blocks — it asks you to
   confirm the unit is honestly one reviewable change. If it is not, split it.
 
@@ -119,11 +106,13 @@ locked: put the notes on the dependent workitem, or supersede.
 | `frozen-node-edited` / `frozen-body-edit` | You changed a node others rely on                               | Revert; `governor new … --supersedes <id>` and edit the successor           |
 | `out-of-band-structural`                  | A structural change the CLI would have refused was made by hand | Revert the hand edit; use `governor edge` / `set` / `status`                |
 | `asymmetric-edge`                         | One-sided edge drift                                            | `governor edge add <from> <kind> <to>` (reconciliation is always permitted) |
+| gate `FAILED with no partial bypass`      | A gate proof fails at commit time                               | Fix the work so the proof passes; only the user may decide `partial: true`  |
 | `no-workitem` / `multi-workitem`          | Commit not shaped as one reviewable unit                        | Split the commit, or justify with `Governor-Allow-Multi: <reason>`          |
 | `legacy-criteria-check` (warning)         | Gate has prose criteria; `gate run` would fail closed           | Migrate to a structured `criteria_check` with a `runnable`                  |
 
 `GOVERNOR=0 git commit …` bypasses all hooks. Never use it silently; if you must, say so to the user
-and record why in the commit message.
+first and record why as a trailer in the commit message — the bypass itself must be signed and
+auditable.
 
 ## What Governor will not do (and you must)
 

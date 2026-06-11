@@ -3,27 +3,42 @@
  * governance toolkit (the defense-in-depth companion to the enforcing hooks;
  * see DESIGN.md control 6).
  *
- * The deliverable is `SKILL.md`: instructions that teach a coding agent the
- * governance-driven workflow — synchronize with the user through an
- * adversarial design interview, encode the agreed work as governance nodes via
- * the `governor` CLI, track sessions in free-edit prose, and finish through
- * gates with one WorkItem per commit.
+ * The deliverable is a skill directory: `SKILL.md` (the lean core — workflow
+ * phases, the two structural rules, the hook playbook) plus `references/`
+ * (progressive-disclosure depth: the full interview methodology, the CLI
+ * recipes, and the `.governance/` structure map an agent loads on demand).
  *
- * This module is the programmatic surface: read the skill text or install it
- * into a repository's agent-skills directory. The `./install` export is the
- * one-shot CLI: `deno run -A jsr:@dreamrock/governor-skill/install`.
+ * This module is the programmatic surface: read the skill text or install the
+ * full directory into a repository's agent-skills location. The `./install`
+ * export is the one-shot CLI: `deno run -A jsr:@dreamrock/governor-skill/install`.
  *
  * @module
  */
 
 import { dirname, join } from "@std/path";
 
+/**
+ * Every file the skill ships, relative to the skill root. `SKILL.md` is the
+ * entry point; the references are loaded by the agent on demand.
+ */
+export const SKILL_FILES: readonly string[] = [
+  "SKILL.md",
+  "references/interview.md",
+  "references/cli.md",
+  "references/structure.md",
+];
+
+/** What happened to one installed file. */
+export type FileAction = "created" | "updated" | "unchanged";
+
 /** Result of an {@link installSkill} run. */
 export interface InstallResult {
-  /** Absolute path of the installed `SKILL.md`. */
+  /** The destination skill directory. */
   path: string;
-  /** What happened: written fresh, overwritten with new content, or already current. */
-  action: "created" | "updated" | "unchanged";
+  /** Aggregate outcome: `unchanged` only when every file was already current. */
+  action: FileAction;
+  /** Per-file outcomes, in {@link SKILL_FILES} order. */
+  files: { path: string; action: FileAction }[];
 }
 
 /**
@@ -31,32 +46,53 @@ export interface InstallResult {
  * Resolved relative to the module so it works from JSR and local checkouts.
  */
 export async function skillText(): Promise<string> {
-  const response = await fetch(import.meta.resolve("./SKILL.md"));
+  return await fileText("SKILL.md");
+}
+
+/** The source of any packaged skill file (a {@link SKILL_FILES} entry). */
+export async function fileText(relPath: string): Promise<string> {
+  const response = await fetch(import.meta.resolve(`./${relPath}`));
   return await response.text();
 }
 
 /**
- * Install `SKILL.md` into `destDir` (created if absent). Idempotent: an
- * up-to-date file is left untouched; a stale one is overwritten — the
+ * Install the skill directory into `destDir` (created if absent). Idempotent:
+ * up-to-date files are left untouched; stale ones are overwritten — the
  * installed copy is generated content, owned by this package, like a hook
  * engine layer. Local customization belongs in a separate skill, not in edits
- * to this file.
+ * to these files.
  */
 export async function installSkill(destDir: string): Promise<InstallResult> {
-  const path = join(destDir, "SKILL.md");
-  const content = await skillText();
+  const files: { path: string; action: FileAction }[] = [];
 
-  let existing: string | null = null;
-  try {
-    existing = await Deno.readTextFile(path);
-  } catch (err) {
-    if (!(err instanceof Deno.errors.NotFound)) throw err;
+  for (const rel of SKILL_FILES) {
+    const path = join(destDir, rel);
+    const content = await fileText(rel);
+
+    let existing: string | null = null;
+    try {
+      existing = await Deno.readTextFile(path);
+    } catch (err) {
+      if (!(err instanceof Deno.errors.NotFound)) throw err;
+    }
+
+    if (existing === content) {
+      files.push({ path, action: "unchanged" });
+      continue;
+    }
+    await Deno.mkdir(dirname(path), { recursive: true });
+    await Deno.writeTextFile(path, content);
+    files.push({ path, action: existing === null ? "created" : "updated" });
   }
-  if (existing === content) return { path, action: "unchanged" };
 
-  await Deno.mkdir(dirname(path), { recursive: true });
-  await Deno.writeTextFile(path, content);
-  return { path, action: existing === null ? "created" : "updated" };
+  return { path: destDir, action: aggregate(files), files };
+}
+
+/** Fold per-file outcomes into one: any write wins over `unchanged`. */
+function aggregate(files: { action: FileAction }[]): FileAction {
+  if (files.every((f) => f.action === "unchanged")) return "unchanged";
+  if (files.every((f) => f.action === "created")) return "created";
+  return "updated";
 }
 
 /** Current package version. Kept in sync with the `version` field in deno.json. */

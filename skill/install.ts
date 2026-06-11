@@ -6,9 +6,9 @@
  * deno run -A jsr:@dreamrock/governor-skill/install --dest <dir>
  * ```
  *
- * Writes the packaged `SKILL.md` into the destination directory (default: the
- * Claude Code per-repo skills location). Re-running upgrades a stale copy and
- * leaves a current one untouched.
+ * Writes the packaged skill directory (`SKILL.md` + `references/`) into the
+ * destination (default: the Claude Code per-repo skills location). Re-running
+ * upgrades stale copies and leaves current ones untouched.
  *
  * @module
  */
@@ -26,5 +26,5 @@ if (import.meta.main) {
   });
 
   const result = await installSkill(flags.dest);
-  console.log(`${result.action}: ${result.path}`);
+  for (const file of result.files) console.log(`${file.action}: ${file.path}`);
 }

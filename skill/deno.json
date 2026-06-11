@@ -7,7 +7,7 @@
     "./install": "./install.ts"
   },
   "publish": {
-    "include": ["mod.ts", "install.ts", "SKILL.md"]
+    "include": ["mod.ts", "install.ts", "SKILL.md", "references/"]
   },
   "imports": {
     "@std/cli": "jsr:@std/cli@^1.0.9",
