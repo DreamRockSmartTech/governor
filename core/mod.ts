@@ -67,8 +67,10 @@ export {
   DEFAULT_TAXONOMY,
   isStatusField,
   isStructuralField,
+  loadTaxonomy,
   mergeTaxonomy,
   resolvePrefix,
+  TAXONOMY_FILE,
 } from "./src/taxonomy.ts";
 export type { EdgeKind, Taxonomy } from "./src/taxonomy.ts";
 export type { Edge, GovNode, Graph, Severity, ValidationFinding } from "./src/types.ts";

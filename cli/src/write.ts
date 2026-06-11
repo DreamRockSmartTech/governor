@@ -12,18 +12,31 @@
 import { join } from "@std/path";
 import {
   buildGraph,
-  DEFAULT_TAXONOMY,
   type GovNode,
   type Graph,
   loadGovernance,
+  loadTaxonomy,
   renderIndex,
   serializeNode,
+  type Taxonomy,
 } from "@dreamrock/governor-core";
 
-/** Load a `.governance/` root into a built graph. */
-export async function loadGraph(root: string): Promise<Graph> {
+/** A loaded tree: the built graph plus the effective taxonomy it was built with. */
+export interface Tree {
+  graph: Graph;
+  taxonomy: Taxonomy;
+}
+
+/**
+ * Load a `.governance/` root into a built graph, under the repo's effective
+ * taxonomy (shipped defaults + the optional `taxonomy.json` override). This is
+ * the single resolve point — every command consumes the taxonomy from here so
+ * repo-defined vocabulary applies uniformly.
+ */
+export async function loadTree(root: string): Promise<Tree> {
+  const taxonomy = await loadTaxonomy(root);
   const nodes = await loadGovernance(root);
-  return buildGraph(nodes, DEFAULT_TAXONOMY);
+  return { graph: buildGraph(nodes, taxonomy), taxonomy };
 }
 
 /**
@@ -40,8 +53,8 @@ export async function writeNode(root: string, node: GovNode): Promise<string> {
 
 /** Regenerate `<root>/INDEX.md` from the current on-disk tree. */
 export async function regenIndex(root: string): Promise<void> {
-  const graph = await loadGraph(root);
-  const markdown = renderIndex(graph, DEFAULT_TAXONOMY);
+  const { graph, taxonomy } = await loadTree(root);
+  const markdown = renderIndex(graph, taxonomy);
   await Deno.writeTextFile(
     join(root, "INDEX.md"),
     markdown.endsWith("\n") ? markdown : markdown + "\n",

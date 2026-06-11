@@ -143,8 +143,8 @@ export function addEdge(
   // Pure symmetry reconciliation changes no meaning, so it is exempt from both
   // the freeze guard and the dependents-block guard.
   if (!isReconciliation(toNode, reverse, from)) {
-    guard(graph, from, taxonomy);
-    blockIfDependents(graph, from, kind, to);
+    guard(graph, from, taxonomy, to);
+    blockIfDependents(graph, from, kind, to, taxonomy);
   }
 
   const updated = [appendEdge(fromNode, kind, to)];
@@ -174,8 +174,8 @@ export function removeEdge(
   const reverse = requireEdgeKind(kind, taxonomy);
   const fromNode = requireNode(graph, from, "edge");
   const toNode = requireNode(graph, to, "edge");
-  guard(graph, from, taxonomy);
-  blockIfDependents(graph, from, kind, to);
+  guard(graph, from, taxonomy, to);
+  blockIfDependents(graph, from, kind, to, taxonomy);
 
   const updated = [dropEdge(fromNode, kind, to)];
   if (reverse) updated.push(dropEdge(toNode, reverse, from));
@@ -184,8 +184,12 @@ export function removeEdge(
 }
 
 /**
- * Transition a work/plan node's status. Enforces the type's status enum and
- * freeze. Refuses gate nodes — gate status is machine-owned by the gate runner.
+ * Transition a work/plan node's status. Enforces the type's status enum.
+ * Refuses gate nodes — gate status is machine-owned by the gate runner.
+ *
+ * Status is deliberately exempt from the freeze guard (ADR-0002): freeze locks
+ * a node's *meaning* (title, prose, plain fields, edges); status is workflow
+ * state — a frozen epic must still be completable when its children are done.
  */
 export function transitionStatus(
   graph: Graph,
@@ -203,7 +207,6 @@ export function transitionStatus(
       `status "${newStatus}" is not valid for ${node.nodeType} (allowed: ${allowed.join(", ")})`,
     );
   }
-  guard(graph, nodeId, taxonomy);
 
   const updated = withFrontmatter(node, { ...node.frontmatter, status: newStatus });
   revalidate(graph, [updated], taxonomy);
@@ -212,9 +215,9 @@ export function transitionStatus(
 
 // ---- internals -------------------------------------------------------------
 
-/** Throw if `nodeId` is frozen. */
-function guard(graph: Graph, nodeId: string, taxonomy: Taxonomy): void {
-  const finding = guardMutation(graph, nodeId, taxonomy);
+/** Throw if `nodeId` is frozen (optionally ignoring freeze from `ignoring`). */
+function guard(graph: Graph, nodeId: string, taxonomy: Taxonomy, ignoring?: string): void {
+  const finding = guardMutation(graph, nodeId, taxonomy, ignoring);
   if (finding) throw new MutationError(finding.message);
 }
 
@@ -223,8 +226,14 @@ function guard(graph: Graph, nodeId: string, taxonomy: Taxonomy): void {
  * edge's own endpoint `to` is excluded — it is the relationship being changed,
  * not a bystander relying on it (otherwise removing an edge could never proceed).
  */
-function blockIfDependents(graph: Graph, from: string, kind: string, to: string): void {
-  const dependents = blastRadius(graph, from, "structural").filter((id) => id !== to);
+function blockIfDependents(
+  graph: Graph,
+  from: string,
+  kind: string,
+  to: string,
+  taxonomy: Taxonomy,
+): void {
+  const dependents = blastRadius(graph, from, "structural", taxonomy).filter((id) => id !== to);
   if (dependents.length > 0) {
     throw new MutationError(
       `structural change (${kind} -> ${to}) on "${from}" is blocked: it has dependents ` +

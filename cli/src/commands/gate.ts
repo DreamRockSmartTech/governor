@@ -9,7 +9,7 @@
 
 import { dirname } from "@std/path";
 import { type GovNode, type Graph, runGate } from "@dreamrock/governor-core";
-import { loadGraph, regenIndex, writeNode } from "../write.ts";
+import { loadTree, regenIndex, writeNode } from "../write.ts";
 
 /** Options for the gate command. */
 export interface GateOptions {
@@ -21,7 +21,7 @@ export interface GateOptions {
 
 /** Run the gate command. Returns the exit code (1 if any gate failed). */
 export async function runGateCommand(opts: GateOptions): Promise<number> {
-  const graph = await loadGraph(opts.root);
+  const { graph } = await loadTree(opts.root);
 
   const gates: GovNode[] = opts.all
     ? [...graph.byId.values()].filter((n) => n.nodeType === "gate")

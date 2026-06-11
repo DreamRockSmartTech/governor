@@ -6,13 +6,8 @@
  * @module
  */
 
-import {
-  buildGraph,
-  DEFAULT_TAXONOMY,
-  type GovNode,
-  type Graph,
-  loadGovernance,
-} from "@dreamrock/governor-core";
+import type { GovNode, Graph } from "@dreamrock/governor-core";
+import { loadTree } from "../write.ts";
 
 /** Statuses that count as "done" — a blocker in one of these no longer blocks. */
 const DONE_STATUSES = new Set(["complete", "closed", "cleared"]);
@@ -52,7 +47,7 @@ export interface NextOptions {
 
 /** Run the next command. Returns the exit code (always 0). */
 export async function runNext(opts: NextOptions): Promise<number> {
-  const graph = buildGraph(await loadGovernance(opts.root), DEFAULT_TAXONOMY);
+  const { graph } = await loadTree(opts.root);
   const ready = unblockedOpenWorkItems(graph);
 
   if (ready.length === 0) {

@@ -12,8 +12,8 @@
 
 import {
   buildGraph,
-  DEFAULT_TAXONOMY,
   loadGovernance,
+  loadTaxonomy,
   validate,
   type ValidationFinding,
 } from "@dreamrock/governor-core";
@@ -36,8 +36,9 @@ export function exitCodeFor(findings: ValidationFinding[]): number {
  */
 export async function runCheck(opts: CheckOptions): Promise<number> {
   const nodes = await loadGovernance(opts.root);
-  const graph = buildGraph(nodes, DEFAULT_TAXONOMY);
-  const findings = validate(graph, DEFAULT_TAXONOMY);
+  const taxonomy = await loadTaxonomy(opts.root);
+  const graph = buildGraph(nodes, taxonomy);
+  const findings = validate(graph, taxonomy);
 
   if (opts.json) {
     console.log(JSON.stringify(findings, null, 2));

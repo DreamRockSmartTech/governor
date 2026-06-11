@@ -7,8 +7,8 @@
  * @module
  */
 
-import { DEFAULT_TAXONOMY, MutationError, setField } from "@dreamrock/governor-core";
-import { loadGraph, regenIndex, writeNode } from "../write.ts";
+import { MutationError, setField } from "@dreamrock/governor-core";
+import { loadTree, regenIndex, writeNode } from "../write.ts";
 
 /** Options for the set command. */
 export interface SetOptions {
@@ -20,9 +20,9 @@ export interface SetOptions {
 
 /** Run the set command. Returns the exit code. */
 export async function runSet(opts: SetOptions): Promise<number> {
-  const graph = await loadGraph(opts.root);
+  const { graph, taxonomy } = await loadTree(opts.root);
   try {
-    const updated = setField(graph, opts.id, opts.field, opts.value, DEFAULT_TAXONOMY);
+    const updated = setField(graph, opts.id, opts.field, opts.value, taxonomy);
     await writeNode(opts.root, updated);
     await regenIndex(opts.root);
     console.log(`Set ${opts.field}=${opts.value} on ${opts.id}`);

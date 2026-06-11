@@ -32,7 +32,7 @@ Deno.test("nodeContext reports status, blocker done-states, blocks, and produced
 
   assertEquals(ctx.id, "epic-07-x");
   assertEquals(ctx.status, "open");
-  // Frozen: its blockers' derived `blocks` edges point at it (a freezing kind).
+  // Frozen: its child derives from it (inbound `parent`, a freezing kind).
   assertEquals(ctx.frozen, true);
   assertEquals(ctx.blockedBy, [
     { id: "epic-01-done", done: true },
@@ -47,11 +47,14 @@ Deno.test("nodeContext returns null for an unknown id", () => {
   assertEquals(nodeContext(g, "epic-99-ghost"), null);
 });
 
-Deno.test("nodeContext marks a node with an inbound freezing edge as frozen", () => {
+Deno.test("nodeContext marks the depended-upon node as frozen, not its dependent", () => {
   const g = buildGraph([
     node("masterplan-01-x", "masterplan", { children: ["epic-01-a"] }),
     node("epic-01-a", "epic", { parent: "masterplan-01-x" }),
   ], DEFAULT_TAXONOMY);
 
-  assertEquals(nodeContext(g, "epic-01-a")!.frozen, true);
+  // The masterplan is frozen — its child relies on it (ADR-0002). The child
+  // is workflow and stays editable.
+  assertEquals(nodeContext(g, "masterplan-01-x")!.frozen, true);
+  assertEquals(nodeContext(g, "epic-01-a")!.frozen, false);
 });

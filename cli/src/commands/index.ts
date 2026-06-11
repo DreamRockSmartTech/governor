@@ -10,12 +10,7 @@
  */
 
 import { join } from "@std/path";
-import {
-  buildGraph,
-  DEFAULT_TAXONOMY,
-  loadGovernance,
-  renderIndex,
-} from "@dreamrock/governor-core";
+import { buildGraph, loadGovernance, loadTaxonomy, renderIndex } from "@dreamrock/governor-core";
 
 /** Options for the index command. */
 export interface IndexOptions {
@@ -32,8 +27,9 @@ export interface IndexOptions {
  */
 export async function runIndex(opts: IndexOptions): Promise<number> {
   const nodes = await loadGovernance(opts.root);
-  const graph = buildGraph(nodes, DEFAULT_TAXONOMY);
-  const markdown = renderIndex(graph, DEFAULT_TAXONOMY);
+  const taxonomy = await loadTaxonomy(opts.root);
+  const graph = buildGraph(nodes, taxonomy);
+  const markdown = renderIndex(graph, taxonomy);
 
   if (opts.write) {
     const target = join(opts.root, "INDEX.md");

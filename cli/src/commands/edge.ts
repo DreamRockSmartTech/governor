@@ -6,8 +6,8 @@
  * @module
  */
 
-import { addEdge, DEFAULT_TAXONOMY, MutationError, removeEdge } from "@dreamrock/governor-core";
-import { loadGraph, regenIndex, writeNode } from "../write.ts";
+import { addEdge, MutationError, removeEdge } from "@dreamrock/governor-core";
+import { loadTree, regenIndex, writeNode } from "../write.ts";
 
 /** Options for the edge command. */
 export interface EdgeOptions {
@@ -20,11 +20,11 @@ export interface EdgeOptions {
 
 /** Run the edge command. Returns the exit code. */
 export async function runEdge(opts: EdgeOptions): Promise<number> {
-  const graph = await loadGraph(opts.root);
+  const { graph, taxonomy } = await loadTree(opts.root);
   try {
     const updated = opts.op === "add"
-      ? addEdge(graph, opts.from, opts.kind, opts.to, DEFAULT_TAXONOMY)
-      : removeEdge(graph, opts.from, opts.kind, opts.to, DEFAULT_TAXONOMY);
+      ? addEdge(graph, opts.from, opts.kind, opts.to, taxonomy)
+      : removeEdge(graph, opts.from, opts.kind, opts.to, taxonomy);
     for (const node of updated) await writeNode(opts.root, node);
     await regenIndex(opts.root);
     console.log(`${opts.op === "add" ? "Added" : "Removed"} ${opts.from} ${opts.kind} ${opts.to}`);

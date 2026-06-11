@@ -6,8 +6,8 @@
  * @module
  */
 
-import { DEFAULT_TAXONOMY, MutationError, transitionStatus } from "@dreamrock/governor-core";
-import { loadGraph, regenIndex, writeNode } from "../write.ts";
+import { MutationError, transitionStatus } from "@dreamrock/governor-core";
+import { loadTree, regenIndex, writeNode } from "../write.ts";
 
 /** Options for the status command. */
 export interface StatusOptions {
@@ -18,9 +18,9 @@ export interface StatusOptions {
 
 /** Run the status command. Returns the exit code. */
 export async function runStatus(opts: StatusOptions): Promise<number> {
-  const graph = await loadGraph(opts.root);
+  const { graph, taxonomy } = await loadTree(opts.root);
   try {
-    const updated = transitionStatus(graph, opts.id, opts.status, DEFAULT_TAXONOMY);
+    const updated = transitionStatus(graph, opts.id, opts.status, taxonomy);
     await writeNode(opts.root, updated);
     await regenIndex(opts.root);
     console.log(`Set status=${opts.status} on ${opts.id}`);

@@ -10,14 +10,8 @@
  */
 
 import { dirname } from "@std/path";
-import {
-  allocate,
-  createNode,
-  DEFAULT_TAXONOMY,
-  MutationError,
-  readGitConfig,
-} from "@dreamrock/governor-core";
-import { loadGraph, regenIndex, writeNode } from "../write.ts";
+import { allocate, createNode, MutationError, readGitConfig } from "@dreamrock/governor-core";
+import { loadTree, regenIndex, writeNode } from "../write.ts";
 
 /** Options for the new command. */
 export interface NewOptions {
@@ -34,12 +28,13 @@ export async function runNew(opts: NewOptions): Promise<number> {
     console.error("new: --title is required");
     return 1;
   }
-  if (!DEFAULT_TAXONOMY.nodeTypes.includes(opts.nodeType)) {
+
+  const { graph, taxonomy } = await loadTree(opts.root);
+  if (!taxonomy.nodeTypes.includes(opts.nodeType)) {
     console.error(`new: unknown node type "${opts.nodeType}"`);
     return 1;
   }
 
-  const graph = await loadGraph(opts.root);
   const nn = await allocate(opts.root, opts.nodeType, graph);
   // Auto-stamp owner = committer identity (stewardship record, not approval).
   const owner = (await readGitConfig(dirname(opts.root), "user.email")) ?? undefined;
@@ -51,7 +46,7 @@ export async function runNew(opts: NewOptions): Promise<number> {
       title: opts.title,
       owner,
       edges: opts.edges,
-      taxonomy: DEFAULT_TAXONOMY,
+      taxonomy,
     });
     const written = await writeNode(opts.root, node);
     for (const target of updated) await writeNode(opts.root, target);
