@@ -13,19 +13,32 @@
     "gov": "deno run -A cli/mod.ts"
   },
   "test": {
-    "include": ["**/*.unit.ts", "**/*.e2e.ts"]
+    "include": [
+      "**/*.unit.ts",
+      "**/*.e2e.ts"
+    ]
   },
   "fmt": {
     "useTabs": false,
     "lineWidth": 100,
     "indentWidth": 2,
     "singleQuote": false,
-    "exclude": ["**/tests/testdata/", ".governance/", "docs/"]
+    "exclude": [
+      "**/tests/testdata/",
+      ".governance/",
+      "docs/"
+    ]
   },
   "lint": {
     "rules": {
-      "tags": ["recommended"]
+      "tags": [
+        "recommended"
+      ]
     },
-    "exclude": ["**/tests/testdata/"]
+    "exclude": [
+      "**/tests/testdata/",
+      ".governance/",
+      "docs/"
+    ]
   }
 }
