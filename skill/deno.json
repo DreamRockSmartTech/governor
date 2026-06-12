@@ -1,13 +1,13 @@
 {
   "name": "@dreamrock/governor-skill",
-  "version": "0.1.1",
-  "license": "MIT",
+  "version": "0.2.0",
+  "license": "BUSL-1.1",
   "exports": {
     ".": "./mod.ts",
     "./install": "./install.ts"
   },
   "publish": {
-    "include": ["mod.ts", "install.ts", "SKILL.md", "references/"]
+    "include": ["mod.ts", "install.ts", "SKILL.md", "references/", "LICENSE"]
   },
   "imports": {
     "@std/cli": "jsr:@std/cli@^1.0.9",

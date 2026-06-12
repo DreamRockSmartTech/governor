@@ -21,6 +21,7 @@ children:
   - workitem-12-release-zero-one-zero-prep
   - workitem-13-skill-reference-expansion
   - workitem-14-jsr-slow-type-fix-on-hooks-wrapper-export
+  - workitem-15-usage-protections-for-publication
 decisions:
   - decision-01-approval-authority-exclude-approved-by-keep-owner-auto-stamp
   - decision-02-freeze-direction-depended-upon-node-freezes-status-is-workflow-exempt

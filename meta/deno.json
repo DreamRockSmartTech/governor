@@ -1,12 +1,12 @@
 {
   "name": "@dreamrock/governor",
-  "version": "0.1.1",
-  "license": "MIT",
+  "version": "0.2.0",
+  "license": "BUSL-1.1",
   "exports": "./mod.ts",
   "publish": {
     "exclude": ["tests/"]
   },
   "imports": {
-    "@dreamrock/governor-core": "jsr:@dreamrock/governor-core@^0.1.0"
+    "@dreamrock/governor-core": "jsr:@dreamrock/governor-core@^0.2.0"
   }
 }

@@ -18,4 +18,4 @@ export * from "@dreamrock/governor-core";
 export { VERSION as CORE_VERSION } from "@dreamrock/governor-core";
 
 /** Current package version. Kept in sync with the `version` field in deno.json. */
-export const VERSION: string = "0.1.1";
+export const VERSION: string = "0.2.0";

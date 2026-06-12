@@ -130,4 +130,8 @@ of test they are — unit tests use the `*.unit.ts` suffix. Fixtures live under 
 
 ## License
 
-[MIT](./LICENSE) © DreamRock SmartTech LLC
+[Business Source License 1.1](./LICENSE) © DreamRock SmartTech LLC
+
+Free for individuals, non-profits, education, and small organizations under the
+Additional Use Grant; production use beyond it requires a commercial license.
+Each released version converts to Apache-2.0 four years after release.

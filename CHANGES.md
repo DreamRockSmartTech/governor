@@ -3,6 +3,27 @@
 All notable changes to Governor are recorded here. Versions follow
 [Semantic Versioning 2.0.0](https://semver.org/).
 
+## 0.2.0 — 2026-06-11
+
+Relicense: MIT → Business Source License 1.1. First release under the new terms.
+
+### Changed
+
+- **License**: all four packages move from MIT to BUSL-1.1 (canonical Terms; production use is
+  free for individuals, non-profits, education, and organizations under 30 full-time employees
+  and $1M annual gross revenue measured across affiliates under common control; hosted/SaaS and
+  competitive offerings require a commercial license; each released version converts to
+  Apache-2.0 four years after release). Because packages publish from workspace subdirectories,
+  `LICENSE` now ships inside every package so the parameters travel with the published artifact;
+  the `BUSL-1.1` SPDX identifier is declared in each manifest.
+- **Contribution terms**: contributions now require assent to the Contributor License Agreement
+  (`CLA.md`); `CONTRIBUTING.md` documents the assent line and the governance discipline.
+
+### Yanked
+
+- Pre-relicense JSR versions (`0.0.1`, `0.1.1`, `0.1.2`) are yanked; `0.2.0` is the first release
+  under the Business Source License.
+
 ## 0.1.1 — 2026-06-11
 
 Dogfood completion and the skill's full directory format.
