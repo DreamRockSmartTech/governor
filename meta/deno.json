@@ -2,11 +2,15 @@
   "name": "@dreamrock/governor",
   "version": "0.2.0",
   "license": "BUSL-1.1",
-  "exports": "./mod.ts",
+  "exports": {
+    ".": "./mod.ts",
+    "./cli": "./cli.ts"
+  },
   "publish": {
     "exclude": ["tests/"]
   },
   "imports": {
-    "@dreamrock/governor-core": "jsr:@dreamrock/governor-core@^0.2.0"
+    "@dreamrock/governor-core": "jsr:@dreamrock/governor-core@^0.2.0",
+    "@dreamrock/governor-cli": "jsr:@dreamrock/governor-cli@^0.2.0"
   }
 }

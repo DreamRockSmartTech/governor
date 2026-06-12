@@ -2,13 +2,17 @@
  * Governor — umbrella / meta package for the Governor governance toolkit.
  *
  * Portable, git-native governance for any repository. This flat package is the
- * convenience entry point: today it re-exports the core library so the headline
- * name is a real, functional publish. As the toolkit grows it becomes the
- * umbrella that re-exports across `@dreamrock/governor-core` and frontends.
+ * convenience entry point: the default export re-exports the core library in
+ * full, and `./cli` forwards the reference CLI, so the headline name serves
+ * both the library and the tool:
+ *
+ * ```sh
+ * deno install -gA -n governor jsr:@dreamrock/governor/cli
+ * ```
  *
  * Components:
  * - `@dreamrock/governor-core` — the frontend-agnostic governance library (re-exported here in full).
- * - `@dreamrock/governor-cli` — the reference command-line frontend.
+ * - `@dreamrock/governor-cli` — the reference command-line frontend (forwarded via `./cli`).
  * - `@dreamrock/governor-skill` — the agent skill (cooperative layer).
  *
  * @module

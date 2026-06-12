@@ -20,7 +20,15 @@ import { dispatch } from "./src/args.ts";
 /** Current package version. Kept in sync with the `version` field in deno.json. */
 export const VERSION: string = "0.2.0";
 
+/**
+ * Run the Governor CLI with the given arguments and resolve to the process
+ * exit code. The programmatic entry point — the umbrella package's `./cli`
+ * export forwards to this so the CLI can run under either package name.
+ */
+export async function main(args: string[] = Deno.args): Promise<number> {
+  return await dispatch(args, `${VERSION} (core ${CORE_VERSION})`);
+}
+
 if (import.meta.main) {
-  const code = await dispatch(Deno.args, `${VERSION} (core ${CORE_VERSION})`);
-  Deno.exit(code);
+  Deno.exit(await main());
 }

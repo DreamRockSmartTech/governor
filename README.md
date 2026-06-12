@@ -16,7 +16,7 @@ service is required.
 ## Install
 
 ```sh
-deno install -gA -n governor jsr:@dreamrock/governor-cli   # the CLI
+deno install -gA -n governor jsr:@dreamrock/governor/cli   # the CLI (via the umbrella package)
 deno run -A jsr:@dreamrock/governor-skill/install          # the agent skill (optional)
 ```
 

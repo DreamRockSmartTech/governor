@@ -7,6 +7,13 @@ All notable changes to Governor are recorded here. Versions follow
 
 Relicense: MIT → Business Source License 1.1. First release under the new terms.
 
+### Added
+
+- **Umbrella CLI**: `@dreamrock/governor` now forwards the CLI via its `./cli` export, so one
+  identifier serves both the library and the tool —
+  `deno install -gA -n governor jsr:@dreamrock/governor/cli`. `@dreamrock/governor-cli` exports a
+  programmatic `main(args)` entry point to support the forwarding.
+
 ### Changed
 
 - **License**: all four packages move from MIT to BUSL-1.1 (canonical Terms; production use is

@@ -22,6 +22,7 @@ children:
   - workitem-13-skill-reference-expansion
   - workitem-14-jsr-slow-type-fix-on-hooks-wrapper-export
   - workitem-15-usage-protections-for-publication
+  - workitem-16-umbrella-package-forwards-the-cli
 decisions:
   - decision-01-approval-authority-exclude-approved-by-keep-owner-auto-stamp
   - decision-02-freeze-direction-depended-upon-node-freezes-status-is-workflow-exempt
