@@ -2,7 +2,7 @@
 uid: 0c7e4e8f-4ab8-45d2-ab5b-4f8770161a11
 id: workitem-16-umbrella-package-forwards-the-cli
 node_type: workitem
-status: open
+status: complete
 title: Umbrella package forwards the CLI
 owner: j.bellero@dreamrocksmarttech.com
 parent: masterplan-01-road-to-v1
@@ -39,3 +39,10 @@ Library consumers importing `.` never fetch CLI modules (per-path resolution),
 so the aggregation costs library users nothing. Rejected: folding the CLI's
 code into the umbrella (duplicates the package; the forwarder keeps
 `governor-cli` the single source of truth).
+
+## Session log
+
+- 2026-06-11 — Landed in `097c153` (umbrella `./cli` export, `main()` seam,
+  README install line, changelog). Verified: type-check, lint, 144 tests,
+  publish dry-run including `meta/cli.ts` in the file set. Status → complete
+  in this commit.
